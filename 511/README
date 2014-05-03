@@ -1,0 +1,1 @@
+This is a gadget that displays traffic conditions for the San Francisco Bay Area.  It fetches data from 511.org.  The main file is traffic.xml.
