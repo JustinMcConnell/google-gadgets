@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs
+    title               = "Nasa Mission Milestones"
+    directory_title     = "Nasa Mission Milestones"
+    title_url           = "http://www.nasa.gov/missions/calendar/index.html"
+    description         = "Countdown to significant moments in NASA space missions."
+    author              = "Justin McConnell"
+    author_email        = "boolean+gmodules@gmail.com"
+    author_location     = "San Francisco, CA"
+    author_affiliation  = "http://www.talisweb.com/justin/"
+    author_link         = "http://www.talisweb.com/justin/"
+    author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+    author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+    author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+    screenshot          = "http://www.bayareacoder.com/gogo/nasa/screenshot.png"
+    thumbnail           = "http://www.bayareacoder.com/gogo/nasa/thumbnail.png"
+    scaling             = "true"
+    scrolling           = "true"
+    singleton           = "false">
+    <Require feature="analytics" />
+    <Require feature="dynamic-height" />
+    <Require feature="setprefs" />    
+  </ModulePrefs>
+  
+  <UserPref datatype="hidden" name="usedMilestones" default_value="0|1" />
+  
+  <Content type="html">
+    <![CDATA[
+    <style type="text/css">
+      /* Browser reset rules */
+      html, body, div, span, h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, font, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,dl, dt, dd, ol, ul, li,fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-weight: inherit;
+        font-style: inherit;
+        font-size: 100%;
+        font-family: inherit;
+      }
+      body {
+        font-size: 100%;
+        line-height: 1.125em;
+        color: #000000;
+        background-color: #ffffff;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      ol, ul {
+        list-style: none;
+      }
+      
+      /* Gadget specific rules */
+      body {
+        color: #eee;
+        background-color: #003D7A;
+        text-align: center;
+      }
+      #remote___MODULE_ID__ {
+        background: purple;
+        /*overflow: visible !important;*/
+      }
+      a, a:link {
+        color: #99CCFF;
+        text-decoration: none;
+      }
+      a:visited {
+        color: #99CCFF;
+        border-bottom: 1px dotted #005D9A;
+      }
+      a:active {
+      }
+      a:hover {
+        border-bottom: 1px solid #99CCFF;
+      }
+      a:focus {
+      }
+      .white {
+        color: #eee !important;
+        border-bottom: 1px dotted #eee !important;
+      }
+      .white:hover {
+        border-bottom: 1px solid #eee !important;
+      }
+      h1 {
+        font-size: 15px;
+        line-height: 15px;
+        font-weight: bold;
+        padding: 5px;
+        background-color: #000;
+      }
+      #container {
+        font-size: 0.875em;
+        margin: 10px auto;
+        width: 243px;
+        text-align: left;
+        background: red;
+      }
+      #settings {
+        display: none;
+        position: absolute;
+        top: 10px;
+        width: 243px;
+        padding-bottom: 10px;
+        background: green url(http://bayareacoder.com/gogo/nasa/tranny.png) repeat scroll 0pt;
+        font-size: 12px;
+      }
+      #settings div {
+        padding: 0 10px 10px 10px;
+      }
+      #settings p {
+        text-align: center;
+      }
+      #settings_open {
+        float: right;
+        font-size: 11px;
+        text-align: right;
+        margin: 2px 4px 0 0;
+      }
+      #settings_close1 {
+        float: right;
+        font-size: 11px;
+        text-align: right;
+        margin: 2px 4px 0 0;      
+      }
+      #settings_close2 {
+      }      
+      #settings_milestones {
+        padding: 0pt !important;
+      }
+      #settings_milestones ul {
+        list-style-type: none;
+      }
+      #settings_milestones li {
+        padding: 0px 5px;
+      }
+      #milestones {
+      }
+      .countdown_body { 
+        padding:5px 15px;
+        background-color: #002D6A;
+        width: 213px;
+        border-bottom: 1px solid #000;
+      }
+      .countdown_body p { 
+        margin:0 0 5px 0;
+        font-family:Trebuchet MS;
+        font-size:12px; 
+        font-weight:bold;
+      }
+      .countdown_clock { 
+        width:210px; 
+        height:44px; 
+        border:1px solid #004174;
+        background:url(http://bayareacoder.com/gogo/nasa/mission_countdown_background.png) no-repeat 0 0;
+      }
+      .countdown_labels { 
+        width:210px; 
+        overflow:hidden; 
+      }
+      .day { 
+        width:51px;
+      }
+      .hour { 
+        width:54px;
+      }
+      .minute { 
+        width:54px; 
+      }
+      .second { 
+        width:51px; 
+      }
+      .countdown_clock div, .countdown_labels div { 
+        float:left; 
+        text-align:center;
+      }
+      .countdown_clock div { 
+        line-height:44px; 
+        font-family:Trebuchet MS; 
+        font-size:20px; 
+        font-weight:bold; 
+        text-shadow:#000 0 0 5px; 
+      }
+      .countdown_labels div{ 
+        line-height:26px; 
+        font-family:Arial; 
+        font-size:11px; 
+        color:#fff; 
+      }      
+    </style>
+    <!--[if lt IE 8]>
+    <style type="text/css">
+      .hour { 
+        width:53px;
+      }
+      .minute { 
+        width:53px; 
+      }
+      .countdown_body {
+        width: 227px !important;
+      }
+    </style>
+    <![endif]-->
+
+    
+    <div id="container">
+      <a id="settings_open" class="white" href="javascript:void(0);">Settings</a>
+      <h1>Nasa Mission Milestones</h1>
+      <div id="milestones"></div>
+      <div id="settings">
+        <div id="settings_milestones">
+          <p><a id="settings_close1" class="white" href="javascript:void(0);">Close</a></p>
+          <h1>Nasa Mission Milestones</h1>
+        </div>
+        <p><a id="settings_close2" class="white" href="javascript:void(0);">Close</a></p>
+      </div>
+    </div>
+
+
+    <script type="text/javascript">
+      _IG_Analytics("UA-51692-4", "/nasamilestones");
+
+      var nasa = {
+        prefs : new _IG_Prefs(),
+        milestones : [],
+        timer : null,
+        init : function() {
+          this.addData();
+          this.setMilestonesFromPrefs();          
+          this.addSettings();
+          this.addAllMilestones();
+          this.updateUsedMilestones();
+          this.timer = setInterval(function() {
+            nasa.updateUsedMilestones.call(nasa);
+          }, 1000);
+        },
+        setMilestonesFromPrefs : function() {
+          var prefMilestones = this.prefs.getString("usedMilestones").split(/\|/);
+          for (var i=0, ic=prefMilestones.length; i<ic; i++) {
+            for (var j=0, jc=this.milestones.length; j<jc; j++) {
+              if (prefMilestones[i] == this.milestones[j].id) {
+                this.milestones[j].used = true;
+              }
+            }
+          }
+        },
+        saveMilestonesToPrefs : function() {
+          var milestone, saveInts = [];
+          for (var i=0, ic=this.milestones.length; i<ic; i++) {
+            milestone = this.milestones[i];
+            if (milestone.used) {
+              saveInts.push(milestone.id);
+            }
+          }
+          this.prefs.set("usedMilestones", saveInts.join("|"));
+        },
+        addSettings : function() {
+          var milestone, check, link, item, list = document.createElement("ul");
+
+          for (var i=0, ic=this.milestones.length; i<ic; i++) {
+            milestone = this.milestones[i];
+            item = document.createElement("li");
+            check = document.createElement("input");
+            check.name = "blah";
+            check.type = "checkbox";
+            check.value = i;
+            check.onclick = function(milestone) {
+              return function() {
+                milestone.used = !milestone.used;
+                nasa.addAllMilestones.call(nasa);
+              };
+            }(milestone);
+            
+            if (milestone.url) {
+              link = document.createElement("a");
+              link.href = milestone.url;
+            } else {
+              link = document.createElement("span");
+            }            
+            link.appendChild(document.createTextNode(milestone.id));
+            item.appendChild(check);
+            // IE<8 will not set checked before the input is added to it's parent node?
+            check.checked = milestone.used;
+            item.appendChild(document.createTextNode(" "));
+            item.appendChild(link);
+            item.appendChild(document.createTextNode(": " + new Date(Date.parse(milestone.ts)).toDateString()));
+            list.appendChild(item);
+          }
+          
+          Dom.get("settings_milestones").appendChild(list);
+          
+          Event.add("settings_open", "click", function() {
+            nasa.toggleSettings.call(nasa);
+          });
+          Event.add("settings_close1", "click", function() {
+            nasa.toggleSettings.call(nasa);
+          });          
+          Event.add("settings_close2", "click", function() {
+            nasa.toggleSettings.call(nasa);
+          });                   
+        },
+        toggleSettings : function() {
+          var settings = Dom.get("settings");
+          if (!settings.style.display || settings.style.display == "none") {
+            settings.style.display = "block";
+          } else {
+            settings.style.display = "none";
+            this.saveMilestonesToPrefs();
+          }
+        },
+        addAllMilestones : function() {
+          var milestone;
+          for (var i=0, ic=this.milestones.length; i<ic; i++) {
+            milestone = this.milestones[i];
+            if (!milestone.used) {
+              var unusedMilestone = Dom.get(milestone.id);
+              if (unusedMilestone) {
+                unusedMilestone.parentNode.removeChild(unusedMilestone);
+              }
+              continue;
+            }
+            this.addSingleMilestone(milestone);
+          }
+          
+          var newHeight = Dom.get("milestones").scrollHeight + 50;
+          if (newHeight < 151) {
+            newHeight = 151;
+          }
+          //_IG_AdjustIFrameHeight(newHeight);
+        },
+        addSingleMilestone : function(milestone) {
+          if (Dom.get(milestone.id)) {
+            return;
+          }
+          var domElem, container = Dom.get("milestones");
+          domElem = document.createElement("div");
+          domElem.id= milestone.id;
+          domElem.className = "countdown_body";
+          domElem.innerHTML = ""+
+            "<p>"+
+            (milestone.url ? "<a href='" + milestone.url + "'>" : "") +
+            milestone.id +
+            (milestone.url ? "</a>" : "") + 
+            " " + milestone.info + ":</p>" +
+            "<div class='countdown_clock'>"+
+            "    <div class='day'></div>"+
+            "    <div class='hour'></div>"+
+            "    <div class='minute'></div>"+
+            "    <div class='second'></div>"+
+            "</div>"+
+            "<div class='countdown_labels'>"+
+            "  <div class='day'>Days</div>"+
+            "  <div class='hour'>Hours</div>"+
+            "  <div class='minute'>Min</div>"+
+            "  <div class='second'>Sec</div>"+
+            "</div>";
+          container.appendChild(domElem);
+        },
+        updateUsedMilestones : function() {
+          var milestone, milestoneNums, secondsApart, domElem, domChildren;
+          var now = new Date().getTime();
+          for (var i=0, ic=this.milestones.length; i<ic; i++) {
+            milestone = this.milestones[i];
+            secondsApart = Math.floor((Date.parse(milestone.ts) - now) / 1000);
+            if (isNaN(secondsApart)) {
+              continue;
+            }
+            milestoneNums = this.dateRangeNumbers(secondsApart);
+            domElem = Dom.get(milestone.id);
+            if (domElem) {
+              domChildren = domElem.getElementsByTagName("div");
+              domChildren[1].innerHTML = milestoneNums.days;
+              domChildren[2].innerHTML = milestoneNums.hours;
+              domChildren[3].innerHTML = milestoneNums.minutes;
+              domChildren[4].innerHTML = milestoneNums.seconds;              
+            }
+          }
+        },
+        dateRangeNumbers : function(seconds) {
+          var answer = {
+            days : 0,
+            hours : 0,
+            minutes : 0,
+            seconds : 0
+          };
+
+          if (typeof seconds == "number" && !isNaN(seconds)) {
+            if (seconds < 60) {
+              answer.seconds = seconds;
+            } else if (seconds >= 60 && seconds < 3600) {
+              answer.minutes = Math.floor(seconds / 60);
+              answer.seconds = seconds % 60;
+            } else if (seconds >= 3600 && seconds < 86400) {
+              answer.hours = Math.floor(seconds / 3600);
+              answer.minutes = Math.floor((seconds % 3600) / 60);
+              answer.seconds = seconds % 60;
+            } else if (seconds >= 86400) {
+              answer.days = Math.floor(seconds / 86400);
+              answer.hours = Math.floor((seconds % 86400) / 3600);
+              answer.minutes = Math.floor((seconds % 3600) / 60);
+              answer.seconds = seconds % 60;
+            }
+          }
+          
+          if (answer.hours < 10) { answer.hours = "0" + answer.hours; }
+          if (answer.minutes < 10) { answer.minutes = "0" + answer.minutes; }
+          if (answer.seconds < 10) { answer.seconds = "0" + answer.seconds; }
+          return answer;
+        },
+        addData : function() {
+          this.milestones.push({
+            id : "Phoenix",
+            info : "Lands on Mars in",
+            url : "http://www.nasa.gov/mission_pages/phoenix/main/",
+            ts : "Sat, May 25 2008 19:53:36 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "Discovery (STS-124)",
+            info : "Launches in",
+            url : "http://www.nasa.gov/mission_pages/shuttle/main",
+            ts : "Sat, May 31 2008 17:02:11 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "GLAST",
+            info : "Launches in",
+            url : "http://www.nasa.gov/mission_pages/GLAST/main/index.html",
+            ts : "Tue, Jun 3 2008 11:45:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "OSTM",
+            info : "Launches in",
+            url : "http://sealevel.jpl.nasa.gov/mission/ostm.html",
+            ts : "Sun, Jun 15 2008 04:47:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "IBEX",
+            info : "Launches in",
+            url : "http://www.nasa.gov/mission_pages/ibex/index.html",
+            ts : "Sat, Sep 13 2008 00:00:00 GMT-0400",
+            used : false
+          });          
+          this.milestones.push({
+            id : "TacSat-3",
+            info : "Launches in",
+            url : "",
+            ts : "Sat, Sep 14 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "Atlantis (STS-125)",
+            info : "Launches in",
+            url : "http://www.nasa.gov/mission_pages/shuttle/shuttlemissions/hst_sm4/index.html",
+            ts : "Wed, Oct 8 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "Endeavour (STS-126)",
+            info : "Launches in",
+            url : "",
+            ts : "Mon, Nov 10 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "STSS Demonstrators Program",
+            info : "Launches in",
+            url : "",
+            ts : "Thu, Nov 13 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "LRO/LCROSS",
+            info : "Launches in",
+            url : "http://lunar.gsfc.nasa.gov/",
+            ts : "Mon, Nov 24 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "SDO",
+            info : "Launches in",
+            url : "http://sdo.gsfc.nasa.gov/",
+            ts : "Mon, Dec 1 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "Discovery STS-119",
+            info : "Launches in",
+            url : "",
+            ts : "Thu, Dec 4 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "GOES-O",
+            info : "Launches in",
+            url : "",
+            ts : "Fri, Dec 12 2008 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "OCO",
+            info : "Launches in",
+            url : "http://oco.jpl.nasa.gov/",
+            ts : "Mon, Dec 15 2008 00:00:00 GMT-0400",
+            used : false
+          });     
+          this.milestones.push({
+            id : "NOAA-N Prime",
+            info : "Launches in",
+            url : "http://www.nasa.gov/mission_pages/noaa-n/main/index.html",
+            ts : "Sun, Feb 1 2009 00:00:00 GMT-0400",
+            used : false
+          });
+          this.milestones.push({
+            id : "Kepler",
+            info : "Launches in",
+            url : "http://kepler.nasa.gov/",
+            ts : "Mon, Feb 16 2009 00:00:00 GMT-0400",
+            used : false
+          });          
+          this.milestones.push({
+            id : "Glory",
+            info : "Launches in",
+            url : "http://glory.gsfc.nasa.gov/",
+            ts : "Sun, Mar 1 2009 00:00:00 GMT-0400",
+            used : false
+          });
+          
+          this.milestones.sort(function(a, b) {
+            var aDate = new Date(Date.parse(a.ts)),
+                bDate = new Date(Date.parse(b.ts));
+            
+            if (aDate > bDate) {
+              return 1;
+            } else if(aDate < bDate) {
+              return -1;
+            } else {
+              return 0;
+            }            
+          });
+        }
+      };
+
+      // Dom.get and Event.add yoinked from http://www.dustindiaz.com/add-remove-elements-reprise/
+      // Event.remove written 2008/03/23
+      var Dom = {
+        get: function(el) {
+          if (typeof el === 'string') {
+            return document.getElementById(el);
+          } else {
+            return el;
+          }
+        }
+      };
+      var Event = {
+        add: function() {
+          if (window.addEventListener) {
+            return function(el, type, fn) {
+              Dom.get(el).addEventListener(type, fn, false);
+            };
+          } else if (window.attachEvent) {
+            return function(el, type, fn) {
+              var f = function() {
+                fn.call(Dom.get(el), window.event);
+              };
+              Dom.get(el).attachEvent('on' + type, f);
+            };
+          }
+        }(),
+        remove: function() {
+          if (window.removeEventListener) {
+            return function(el, type, fn) {
+              Dom.get(el).removeEventListener(type, fn, false);
+            };
+          } else if (window.detachEvent) {
+            return function(el, type, fn) {
+              var f = function() {
+                fn.call(Dom.get(el), window.event);
+              };
+              Dom.get(el).detachEvent('on' + type, f);
+            };
+          }
+        }()      
+      };
+
+      Event.add(window, "load", function() {
+        nasa.init.call(nasa);
+      });
+    </script>
+    ]]>
+  </Content>
+</Module>    
