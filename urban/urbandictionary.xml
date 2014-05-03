@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs
+    title               = "Urban Dictionary"
+    directory_title     = "Urban Dictionary"
+    title_url           = "http://www.urbandictionary.com/"
+    description         = "Urban Dictionary"
+    author              = "Justin McConnell"
+    author_email        = "boolean+gmodules@gmail.com"
+    author_location     = "San Francisco, CA"
+    author_affiliation  = "http://www.talisweb.com/justin/"
+    author_link         = "http://www.talisweb.com/justin/"
+    author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+    author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+    author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+    screenshot          = "http://www.bayareacoder.com/gogo/urban/screenshot.png"
+    thumbnail           = "http://www.bayareacoder.com/gogo/urban/thumbnail.png"
+    height              = "190"
+    width               = "340"
+    scaling             = "true"
+    scrolling           = "false"
+    singleton           = "false">
+    <Require feature="analytics" />
+    <Require feature="dynamic-height"/>
+    <Require feature="setprefs"/>
+    <Require feature="settitle"/>
+    <Require feature="opensocial-0.7"/>
+  </ModulePrefs>
+  
+  <UserPref name="title" display_name="Title" default_value=""/>
+
+  <Content type="html">
+    <![CDATA[
+    <style type="text/css">
+      /* Browser reset rules */
+      html, body, div, span, h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, font, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,dl, dt, dd, ol, ul, li,fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-weight: inherit;
+        font-style: inherit;
+        font-size: 100%;
+        font-family: inherit;
+      }
+      body {
+        font-size: 100%;
+        line-height: 1.125em;
+        color: #000000;
+        background: #ffffff;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      ol, ul {
+        list-style: none;
+      }
+      
+      /* Gadget specific rules */
+      body {
+      
+      }
+      #container {
+        font-size: .875em;
+      }
+    </style>
+
+    <div id="container">
+      <form id="search" onsubmit="return false;">
+        <input id="word" type="text" value="hella">
+        <input id="submit" type="submit" value="Lookup">
+      </form>
+      <div id="word">
+        <p id="word_word"></p>
+        <p id="word_definition"></p>
+        <p id="word_example"></p>
+        <p id="word_author"></p>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      var ud = {
+        words : [],
+      
+        sendRequest : function(type) {
+          var key = "757f2ac3a686a46d4ab1615172fc1a3b";
+          var params = arguments[1] || {};
+          var word = params.word || "";
+
+          var postParams = {};
+          postParams[gadgets.io.RequestParameters.CONTENT_TYPE] = gadgets.io.ContentType.DOM;
+          postParams[gadgets.io.RequestParameters.METHOD] = gadgets.io.MethodType.POST;
+          postParams[gadgets.io.RequestParameters.HEADERS] = {'Content-Type':'text/xml'};
+          postParams[gadgets.io.RequestParameters.POST_DATA] = '' +
+            '<?xml version="1.0" encoding="UTF-8"?>' +
+            '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+            '<soapenv:Body>' +
+            '<ns1:' + type + ' soapenv:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:ns1="urn:UrbanSearch">' +
+            '<key xsi:type="xsd:string">' + escape(key) + '</key>' +
+            (word ? '<term xsi:type="xsd:string">' + escape(word) + '</term>' : '') +
+            '</ns1:' + type + '>' +
+            '</soapenv:Body>' +
+            '</soapenv:Envelope>';
+
+          gadgets.io.makeRequest("http://api.urbandictionary.com/soap", params.callback, postParams);
+        },
+        lookupWord : function(word) {
+          ud.sendRequest("lookup", {word:word, callback:ud.lookupStore});
+        },
+        lookupStore : function(response) {
+          var xmlNode = response.data;
+          ud.words = xmlNode.getElementsByTagName("item");
+          ud.currWord = 0;
+          ud.showWord();
+        },
+        showWord : function() {
+          var cWord = ud.words[ud.currWord];
+          Dom.get("word_word").innerHTML = cWord.getElementsByTagName("word")[0].firstChild.nodeValue;
+          Dom.get("word_definition").innerHTML = cWord.getElementsByTagName("definition")[0].firstChild.nodeValue;
+          Dom.get("word_example").innerHTML = cWord.getElementsByTagName("example")[0].firstChild.nodeValue;
+          Dom.get("word_author").innerHTML = cWord.getElementsByTagName("author")[0].firstChild.nodeValue;
+        },
+        dailyWord : function(word) {
+          ud.sendRequest("get_daily_definition", {"word":word});
+        },
+        randomWord : function(word) {
+          ud.sendRequest("get_random_definition");
+        },
+        init : function() {
+          Event.add("search", "submit", function(e) {
+            ud.lookupWord(Dom.get("word").value);
+          });
+        }
+      };
+
+      // Dom.get and Event.add yoinked from http://www.dustindiaz.com/add-remove-elements-reprise/
+      // Event.remove written 2008/03/23
+      var Dom = {
+        get: function(el) {
+          if (typeof el === 'string') {
+            return document.getElementById(el);
+          } else {
+            return el;
+          }
+        }
+      };
+      var Event = {
+        add: function() {
+          if (window.addEventListener) {
+            return function(el, type, fn) {
+              Dom.get(el).addEventListener(type, fn, false);
+            };
+          } else if (window.attachEvent) {
+            return function(el, type, fn) {
+              var f = function() {
+                fn.call(Dom.get(el), window.event);
+              };
+              Dom.get(el).attachEvent('on' + type, f);
+            };
+          }
+        }(),
+        remove: function() {
+          if (window.removeEventListener) {
+            return function(el, type, fn) {
+              Dom.get(el).removeEventListener(type, fn, false);
+            };
+          } else if (window.detachEvent) {
+            return function(el, type, fn) {
+              var f = function() {
+                fn.call(Dom.get(el), window.event);
+              };
+              Dom.get(el).detachEvent('on' + type, f);
+            };
+          }
+        }()      
+      };
+
+      Event.add(window, "load", ud.init);
+    </script>
+    ]]>
+  </Content>
+</Module>    

@@ -1,0 +1,257 @@
+\n\t\t<html><head><title>NuSOAP
+
+: UrbanSearch</title>\n\t\t<style type=\"text/css\">\n\t\t    body    { font-family: arial; color: 
+
+#000000; background-color: #ffffff; margin: 0px 0px 0px 0px; }\n\t\t    p       { font-family: arial
+
+; color: #000000; margin-top: 0px; margin-bottom: 12px; }\n\t\t    pre { background-color: silver; padding
+
+: 5px; font-family: Courier New; font-size: x-small; color: #000000;}\n\t\t    ul      { margin-top:
+
+ 10px; margin-left: 20px; }\n\t\t    li      { list-style-type: none; margin-top: 10px; color: #000000
+
+; }\n\t\t    .content{\n\t\t\tmargin-left: 0px; padding-bottom: 2em; }\n\t\t    .nav {\n\t\t\tpadding-top
+
+: 10px; padding-bottom: 10px; padding-left: 15px; font-size: .70em;\n\t\t\tmargin-top: 10px; margin-left
+
+: 0px; color: #000000;\n\t\t\tbackground-color: #ccccff; width: 20%; margin-left: 20px; margin-top: 20px
+
+; }\n\t\t    .title {\n\t\t\tfont-family: arial; font-size: 26px; color: #ffffff;\n\t\t\tbackground-color
+
+: #999999; width: 105%; margin-left: 0px;\n\t\t\tpadding-top: 10px; padding-bottom: 10px; padding-left
+
+: 15px;}\n\t\t    .hidden {\n\t\t\tposition: absolute; visibility: hidden; z-index: 200; left: 250px
+
+; top: 100px;\n\t\t\tfont-family: arial; overflow: hidden; width: 600;\n\t\t\tpadding: 20px; font-size
+
+: 10px; background-color: #999999;\n\t\t\tlayer-background-color:#FFFFFF; }\n\t\t    a,a:active  { color
+
+: charcoal; font-weight: bold; }\n\t\t    a:visited   { color: #666666; font-weight: bold; }\n\t\t  
+
+  a:hover     { color: cc3300; font-weight: bold; }\n\t\t</style>\n\t\t<script language=\"JavaScript
+
+\" type=\"text/javascript\">\n\t\t<!--\n\t\t// POP-UP CAPTIONS...\n\t\tfunction lib_bwcheck(){ //Browsercheck
+
+ (needed)\n\t\t    this.ver=navigator.appVersion\n\t\t    this.agent=navigator.userAgent\n\t\t    this
+
+.dom=document.getElementById?1:0\n\t\t    this.opera5=this.agent.indexOf(\"Opera 5\")>-1\n\t\t    this
+
+.ie5=(this.ver.indexOf(\"MSIE 5\")>-1 && this.dom && !this.opera5)?1:0;\n\t\t    this.ie6=(this.ver.indexOf
+
+(\"MSIE 6\")>-1 && this.dom && !this.opera5)?1:0;\n\t\t    this.ie4=(document.all && !this.dom && !this
+
+.opera5)?1:0;\n\t\t    this.ie=this.ie4||this.ie5||this.ie6\n\t\t    this.mac=this.agent.indexOf(\"Mac
+
+\")>-1\n\t\t    this.ns6=(this.dom && parseInt(this.ver) >= 5) ?1:0;\n\t\t    this.ns4=(document.layers
+
+ && !this.dom)?1:0;\n\t\t    this.bw=(this.ie6 || this.ie5 || this.ie4 || this.ns4 || this.ns6 || this
+
+.opera5)\n\t\t    return this\n\t\t}\n\t\tvar bw = new lib_bwcheck()\n\t\t//Makes crossbrowser object
+
+.\n\t\tfunction makeObj(obj){\n\t\t    this.evnt=bw.dom? document.getElementById(obj):bw.ie4?document
+
+.all[obj]:bw.ns4?document.layers[obj]:0;\n\t\t    if(!this.evnt) return false\n\t\t    this.css=bw.dom
+
+||bw.ie4?this.evnt.style:bw.ns4?this.evnt:0;\n\t\t    this.wref=bw.dom||bw.ie4?this.evnt:bw.ns4?this
+
+.css.document:0;\n\t\t    this.writeIt=b_writeIt;\n\t\t    return this\n\t\t}\n\t\t// A unit of measure
+
+ that will be added when setting the position of a layer.\n\t\t//var px = bw.ns4||window.opera?\"\":
+
+\"px\";\n\t\tfunction b_writeIt(text){\n\t\t    if (bw.ns4){this.wref.write(text);this.wref.close()}
+
+\n\t\t    else this.wref.innerHTML = text\n\t\t}\n\t\t//Shows the messages\n\t\tvar oDesc;\n\t\tfunction
+
+ popup(divid){\n\t\t    if(oDesc = new makeObj(divid)){\n\t\t\toDesc.css.visibility = \"visible\"\n\t
+
+\t    }\n\t\t}\n\t\tfunction popout(){ // Hides message\n\t\t    if(oDesc) oDesc.css.visibility = \"hidden
+
+\"\n\t\t}\n\t\t//-->\n\t\t</script>\n\t\t</head>\n\t\t<body>\n\t\t<div class=content>\n\t\t\t<br><br
+
+>\n\t\t\t<div class=title>UrbanSearch</div>\n\t\t\t<div class=nav>\n\t\t\t\t<p>View the <a href=\"/soap
+
+?wsdl\">WSDL</a> for the service.\n\t\t\t\tClick on an operation name to view it&apos;s details.</p
+
+>\n\t\t\t\t<ul><li><a href='#' onclick=\"popout();popup('lookup')\">lookup</a></li><div id='lookup'
+
+ class='hidden'>\n\t\t\t\t    <a href='#' onclick='popout()'><font color='#ffffff'>Close</font></a
+
+><br><br><font color='white'>Name:</font> lookup<br><font color='white'>Binding:</font> UrbanSearchBinding
+
+<br><font color='white'>Endpoint:</font> http://api.urbandictionary.com/soap<br><font color='white'
+
+>SoapAction:</font> http://api.urbandictionary.com/soap/lookup<br><font color='white'>Style:</font
+
+> rpc<br><font color='white'>Input:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace: urn
+
+:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp;message
+
+: lookupRequest<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;key: xsd:string<br>&nbsp;&nbsp;&nbsp
+
+;&nbsp;term: xsd:string<br><font color='white'>Output:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;
+
+&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding
+
+/<br>&nbsp;&nbsp;message: lookupResponse<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;return: tns
+
+:DefinitionArray<br><font color='white'>Namespace:</font> urn:UrbanSearch<br><font color='white'>Transport
+
+:</font> http://schemas.xmlsoap.org/soap/http<br><font color='white'>Documentation:</font> <br></div
+
+><li><a href='#' onclick=\"popout();popup('nearby')\">nearby</a></li><div id='nearby' class='hidden'
+
+>\n\t\t\t\t    <a href='#' onclick='popout()'><font color='#ffffff'>Close</font></a><br><br><font color
+
+='white'>Name:</font> nearby<br><font color='white'>Binding:</font> UrbanSearchBinding<br><font color
+
+='white'>Endpoint:</font> http://api.urbandictionary.com/soap<br><font color='white'>SoapAction:</font
+
+> http://api.urbandictionary.com/soap/nearby<br><font color='white'>Style:</font> rpc<br><font color
+
+='white'>Input:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp
+
+;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp;message: nearbyRequest
+
+<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;key: xsd:string<br>&nbsp;&nbsp;&nbsp;&nbsp;term: xsd
+
+:string<br><font color='white'>Output:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace:
+
+ urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp
+
+;message: nearbyResponse<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;return: tns:WordArray<br><font
+
+ color='white'>Namespace:</font> urn:UrbanSearch<br><font color='white'>Transport:</font> http://schemas
+
+.xmlsoap.org/soap/http<br><font color='white'>Documentation:</font> <br></div><li><a href='#' onclick
+
+=\"popout();popup('count_definitions')\">count_definitions</a></li><div id='count_definitions' class
+
+='hidden'>\n\t\t\t\t    <a href='#' onclick='popout()'><font color='#ffffff'>Close</font></a><br><br
+
+><font color='white'>Name:</font> count_definitions<br><font color='white'>Binding:</font> UrbanSearchBinding
+
+<br><font color='white'>Endpoint:</font> http://api.urbandictionary.com/soap<br><font color='white'
+
+>SoapAction:</font> http://api.urbandictionary.com/soap/count_definitions<br><font color='white'>Style
+
+:</font> rpc<br><font color='white'>Input:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace
+
+: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp
+
+;message: count_definitionsRequest<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;key: xsd:string<br
+
+>&nbsp;&nbsp;&nbsp;&nbsp;term: xsd:string<br><font color='white'>Output:</font><br>&nbsp;&nbsp;use:
+
+ encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap
+
+.org/soap/encoding/<br>&nbsp;&nbsp;message: count_definitionsResponse<br>&nbsp;&nbsp;parts:<br>&nbsp
+
+;&nbsp;&nbsp;&nbsp;return: xsd:integer<br><font color='white'>Namespace:</font> urn:UrbanSearch<br>
+
+<font color='white'>Transport:</font> http://schemas.xmlsoap.org/soap/http<br><font color='white'>Documentation
+
+:</font> <br></div><li><a href='#' onclick=\"popout();popup('get_daily_definition')\">get_daily_definition
+
+</a></li><div id='get_daily_definition' class='hidden'>\n\t\t\t\t    <a href='#' onclick='popout()'
+
+><font color='#ffffff'>Close</font></a><br><br><font color='white'>Name:</font> get_daily_definition
+
+<br><font color='white'>Binding:</font> UrbanSearchBinding<br><font color='white'>Endpoint:</font>
+
+ http://api.urbandictionary.com/soap<br><font color='white'>SoapAction:</font> http://api.urbandictionary
+
+.com/soap/get_daily_definition<br><font color='white'>Style:</font> rpc<br><font color='white'>Input
+
+:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle
+
+: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp;message: get_daily_definitionRequest<br>&nbsp
+
+;&nbsp;parts:<br><font color='white'>Output:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace
+
+: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp
+
+;message: get_daily_definitionResponse<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;return: tns:Definition
+
+<br><font color='white'>Namespace:</font> urn:UrbanSearch<br><font color='white'>Transport:</font>
+
+ http://schemas.xmlsoap.org/soap/http<br><font color='white'>Documentation:</font> <br></div><li><a
+
+ href='#' onclick=\"popout();popup('get_random_definition')\">get_random_definition</a></li><div id
+
+='get_random_definition' class='hidden'>\n\t\t\t\t    <a href='#' onclick='popout()'><font color='#ffffff'
+
+>Close</font></a><br><br><font color='white'>Name:</font> get_random_definition<br><font color='white'
+
+>Binding:</font> UrbanSearchBinding<br><font color='white'>Endpoint:</font> http://api.urbandictionary
+
+.com/soap<br><font color='white'>SoapAction:</font> http://api.urbandictionary.com/soap/get_random_definition
+
+<br><font color='white'>Style:</font> rpc<br><font color='white'>Input:</font><br>&nbsp;&nbsp;use:
+
+ encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap
+
+.org/soap/encoding/<br>&nbsp;&nbsp;message: get_random_definitionRequest<br>&nbsp;&nbsp;parts:<br>&nbsp
+
+;&nbsp;&nbsp;&nbsp;key: xsd:string<br><font color='white'>Output:</font><br>&nbsp;&nbsp;use: encoded
+
+<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap
+
+/encoding/<br>&nbsp;&nbsp;message: get_random_definitionResponse<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp
+
+;&nbsp;&nbsp;return: tns:Definition<br><font color='white'>Namespace:</font> urn:UrbanSearch<br><font
+
+ color='white'>Transport:</font> http://schemas.xmlsoap.org/soap/http<br><font color='white'>Documentation
+
+:</font> <br></div><li><a href='#' onclick=\"popout();popup('get_related_tags')\">get_related_tags
+
+</a></li><div id='get_related_tags' class='hidden'>\n\t\t\t\t    <a href='#' onclick='popout()'><font
+
+ color='#ffffff'>Close</font></a><br><br><font color='white'>Name:</font> get_related_tags<br><font
+
+ color='white'>Binding:</font> UrbanSearchBinding<br><font color='white'>Endpoint:</font> http://api
+
+.urbandictionary.com/soap<br><font color='white'>SoapAction:</font> http://api.urbandictionary.com/soap
+
+/get_related_tags<br><font color='white'>Style:</font> rpc<br><font color='white'>Input:</font><br
+
+>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http
+
+://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp;message: get_related_tagsRequest<br>&nbsp;&nbsp
+
+;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;key: xsd:string<br>&nbsp;&nbsp;&nbsp;&nbsp;tag: xsd:string<br><font
+
+ color='white'>Output:</font><br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch
+
+<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp;message: get_related_tagsResponse
+
+<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;&nbsp;&nbsp;return: tns:WordArray<br><font color='white'>Namespace
+
+:</font> urn:UrbanSearch<br><font color='white'>Transport:</font> http://schemas.xmlsoap.org/soap/http
+
+<br><font color='white'>Documentation:</font> <br></div><li><a href='#' onclick=\"popout();popup('verify_key'
+
+)\">verify_key</a></li><div id='verify_key' class='hidden'>\n\t\t\t\t    <a href='#' onclick='popout
+
+()'><font color='#ffffff'>Close</font></a><br><br><font color='white'>Name:</font> verify_key<br>
+
+<font color='white'>Binding:</font> UrbanSearchBinding<br><font color='white'>Endpoint:</font> http
+
+://api.urbandictionary.com/soap<br><font color='white'>SoapAction:</font> http://api.urbandictionary
+
+.com/soap/verify_key<br><font color='white'>Style:</font> rpc<br><font color='white'>Input:</font>
+
+<br>&nbsp;&nbsp;use: encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle:
+
+ http://schemas.xmlsoap.org/soap/encoding/<br>&nbsp;&nbsp;message: verify_keyRequest<br>&nbsp;&nbsp;parts
+
+:<br>&nbsp;&nbsp;&nbsp;&nbsp;key: xsd:string<br><font color='white'>Output:</font><br>&nbsp;&nbsp;use
+
+: encoded<br>&nbsp;&nbsp;namespace: urn:UrbanSearch<br>&nbsp;&nbsp;encodingStyle: http://schemas.xmlsoap
+
+.org/soap/encoding/<br>&nbsp;&nbsp;message: verify_keyResponse<br>&nbsp;&nbsp;parts:<br>&nbsp;&nbsp;
+
+&nbsp;&nbsp;return: xsd:boolean<br><font color='white'>Namespace:</font> urn:UrbanSearch<br><font color
+
+='white'>Transport:</font> http://schemas.xmlsoap.org/soap/http<br><font color='white'>Documentation
+
+:</font> <br></div>\n\t\t\t\t<ul>\n\t\t\t</div>\n\t\t</div></body></html>
