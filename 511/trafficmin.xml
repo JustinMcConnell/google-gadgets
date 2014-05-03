@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://boolean.googlepages.com/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "Bay Area Traffic"
+  title_url           = "http://traffic.511.org/"
+  description         = "Realtime traffic information for the San Francisco Bay Area via 511.org"
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_location     = "San Francisco, CA 94107"
+  screenshot          = "http://boolean.googlepages.com/511_screenshot.png"
+  thumbnail           = "http://boolean.googlepages.com/511_thumbnail.png"
+  render_inline       = "required"
+  scaling             = "true"
+  scrolling           = "false"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+</ModulePrefs>
+
+<UserPref name="title"    display_name="Title"     default_value="511.org Traffic" />
+<UserPref name="height"   display_name="Height"    default_value="200" />
+<UserPref name="bestfit"  display_name="Best Fit"  default_value="Yes" datatype="enum">
+  <EnumValue value="Yes"  display_value="Yes" />
+  <EnumValue value="No"   display_value="No"  />
+</UserPref>
+<UserPref name="fontsize" display_name="Font Size" default_value="75%" datatype="enum">
+  <EnumValue value="60%"  display_value="Smaller" />
+  <EnumValue value="67%"  display_value="Small"   />
+  <EnumValue value="75%"  display_value="Medium"  />
+  <EnumValue value="90%"  display_value="Large"   />
+  <EnumValue value="105%" display_value="Larger"  />
+</UserPref>
+
+<UserPref name="sort"        default_value="" datatype="hidden" />
+<UserPref name="narrow_text" default_value="" datatype="hidden" />
+<UserPref name="narrow_list" default_value="" datatype="hidden" />
+
+<Content type="html">
+<![CDATA[
+
+<script src="http://boolean.googlepages.com/tinyformatDate.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+var key_sort__MODULE_ID__="sort";var key_filtt__MODULE_ID__="narrow_text";var key_filtl__MODULE_ID__="narrow_list";var id_title__MODULE_ID__="m___MODULE_ID___url";var id_form__MODULE_ID__="m___MODULE_ID___form";var id_form_title__MODULE_ID__="m___MODULE_ID___0";var id_form_height__MODULE_ID__="m___MODULE_ID___1";var id_form_bestfit__MODULE_ID__="m___MODULE_ID___2";var id_form_fontsize__MODULE_ID__="m___MODULE_ID___3";var id_edit__MODULE_ID__="m___MODULE_ID___e";var id_gadget__MODULE_ID__="m___MODULE_ID__";var base_511__MODULE_ID__="http://traffic.511.org/";var base_img__MODULE_ID__="http://boolean.googlepages.com/";var prefs__MODULE_ID__;var list__MODULE_ID__;_IG_RegisterOnloadHandler(main__MODULE_ID__);function main__MODULE_ID__(){init_prefs__MODULE_ID__();var divData="data__MODULE_ID__";var divGUI="gui__MODULE_ID__";var divBox="container__MODULE_ID__";var url=base_511__MODULE_ID__+"traffic_text_all.asp?a="+Math.random();_IG_FetchContent(url,function(html){list__MODULE_ID__=new IncidentList__MODULE_ID__(divData,divGUI,divBox);list__MODULE_ID__.render("loading");var pos1=html.indexOf('<table summary="Traffic incident listing" class="text-data sortable" id="data1">');var pos2=html.indexOf("</table>",pos1);if(pos1>-1&&pos2>-1){html=html.substring(pos1+81,pos2);html=html.replace("Estimated duration:","Duration");html=html.replace("Start time","Start");html=html.replace("Description","Description|");html=html.replace(/<(img.*?)>/g,"&lt;$1&gt;");html=html.replace(/images(\/)/g,base_img__MODULE_ID__+"$1");html=html.replace(/<a href="(traffic_text_\w*?_detail\.asp\?id=\d*?)">/g,"|$1|");html=html.replace(/<\/td>/g,"|");html=html.replace(/<.*?>/g,"");html=html.replace(/\s{2,}/g," ");html=html.replace(/\s\:\s/g,": ");html=html.replace(/\|\s+$/,"");html=html.replace(/More info on /g,"");var parts=html.split("|");parts.shift();for(var i=0;i<parts.length;i+=7){var startDate;var re=/([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{1,2})\s([0-9]{1,2}):([0-9]{1,2})\&nbsp;(pm|am)/;var backrefs=re.exec(parts[i+2].trim());if(backrefs){var startYear=parseInt("20"+backrefs[3]);var startMonth=parseInt(backrefs[1]-1);var startHour=parseInt(backrefs[4]);if(backrefs[6].toLowerCase()=="pm"&&startHour!=12)
+startHour+=12;if((backrefs[6].toLowerCase()=="am"&&startHour==12)||startHour==24)
+startHour=0;startDate=new Date(startYear,startMonth,backrefs[2],startHour,backrefs[5]);}
+else{startDate=new Date(0);}
+list__MODULE_ID__.add(new Incident(parts[i],parts[i+1],startDate,parts[i+3],parts[i+4],parts[i+5],parts[i+6]));}}
+list__MODULE_ID__.sort(prefs__MODULE_ID__.getString(key_sort__MODULE_ID__)||"where");list__MODULE_ID__.setFilterList(prefs__MODULE_ID__.getString(key_filtl__MODULE_ID__)||"hide");list__MODULE_ID__.setFilterText(prefs__MODULE_ID__.getString(key_filtt__MODULE_ID__)||"");list__MODULE_ID__.filter(list__MODULE_ID__.getFilterText(),list__MODULE_ID__.getFilterList());list__MODULE_ID__.render();list__MODULE_ID__.setHeight(prefs__MODULE_ID__.getString("height"),prefs__MODULE_ID__.getString("bestfit"));modifyEditDiv__MODULE_ID__();});}
+function IncidentList__MODULE_ID__(){this.incidents=[];this.sortKey="";this.filterText="";this.filterList="";this.lastScreen="";this.divData=arguments[0];this.divGUI=arguments[1];this.divBox=arguments[2];this.bestFitOn=prefs__MODULE_ID__.getString("bestfit").toLowerCase()=="yes";}
+IncidentList__MODULE_ID__.prototype.add=function(incident){if(typeof incident!="object")
+return false;this.incidents.push(incident);}
+IncidentList__MODULE_ID__.prototype.get=function(incident_id){for(var i=0;i<this.incidents.length;i++){if(this.incidents[i].id==incident_id)
+return this.incidents[i];}
+return false;}
+IncidentList__MODULE_ID__.prototype.length=function(){if(typeof this.incidents=="object")
+return this.incidents.length;return 0;}
+IncidentList__MODULE_ID__.prototype.getSortKey=function(){return this.sortKey||"";}
+IncidentList__MODULE_ID__.prototype.setSortKey=function(str){if(!str||typeof str!="string"){return false;}
+this.sortKey=str;return true;}
+IncidentList__MODULE_ID__.prototype.getFilterList=function(){return this.filterList||"";}
+IncidentList__MODULE_ID__.prototype.setFilterList=function(str){if(!str||typeof str!="string")
+return false;this.filterList=str;return true;}
+IncidentList__MODULE_ID__.prototype.getFilterText=function(){return this.filterText||"";}
+IncidentList__MODULE_ID__.prototype.setFilterText=function(str){if(typeof str!="string")
+return false;this.filterText=str;return true;}
+IncidentList__MODULE_ID__.prototype.save=function(){var key=arguments[0];var val=arguments[1];if(!val){if(key==key_sort__MODULE_ID__&&this.sortKey)
+val=this.sortKey;else if(key==key_filtl__MODULE_ID__&&this.filterList)
+val=this.filterList;else if(key==key_filtt__MODULE_ID__&&(this.filterText||this.filterText==""))
+val=this.filterText;}
+var oldVal=prefs__MODULE_ID__.getString(key);if(key&&val!=oldVal){prefs__MODULE_ID__.set(key,val);return true;}
+return false;}
+IncidentList__MODULE_ID__.prototype.setTitle=function(title){if(_gel(id_title__MODULE_ID__))
+_gel(id_title__MODULE_ID__).innerHTML=title;}
+IncidentList__MODULE_ID__.prototype.setFontSize=function(size){if(_gel(this.divBox))
+_gel(this.divBox).style.fontSize=size;}
+IncidentList__MODULE_ID__.prototype.setHeight=function(){if(!_gel(this.divBox))
+return false;var height=arguments[0]||"";var bestfit=arguments[1]||"";if(height.toLowerCase()=="yes"){bestfit="yes";}
+else if(height.toLowerCase()=="no"){bestfit="no";}
+if(bestfit.toLowerCase()=="yes"){var min=200;var user_height=_gel(id_form_height__MODULE_ID__).value;var stuff_height=_gel(this.divData).offsetHeight+
+_gel("d_sort__MODULE_ID__").offsetHeight;if(stuff_height<=min){_gel(this.divBox).style.height=min+"px";}
+else if(stuff_height<=user_height){_gel(this.divBox).style.height=stuff_height+"px";}
+else if(stuff_height>user_height){_gel(this.divBox).style.height=user_height+"px";}
+this.bestFitOn=true;}
+else{if(!height){height=prefs__MODULE_ID__.getString("height");}
+_gel(this.divBox).style.height=height+"px";this.bestFitOn=false;}}
+IncidentList__MODULE_ID__.prototype.filter=function(str,flag){var rhsides=str.toLowerCase().replace(", ",",").split(",");var rhs,lhs;for(var i=0;i<this.incidents.length;i++){for(var j=0;j<rhsides.length;j++){rhs=rhsides[j].trim();if(!rhs&&j>0)
+continue;lhs=this.incidents[i].route.toLowerCase();if(str==""){this.incidents[i].displayAll="block";j=rhsides.length;}
+else if(lhs.indexOf(rhs)!=-1&&flag=="show"){this.incidents[i].displayAll="block";j=rhsides.length;}
+else if(lhs.indexOf(rhs)!=-1){this.incidents[i].displayAll="none";j=rhsides.length;}
+else if(lhs.indexOf(rhs)==-1&&flag=="show")
+this.incidents[i].displayAll="none";else
+this.incidents[i].displayAll="block";}}
+this.setFilterText(str);this.setFilterList(flag);}
+IncidentList__MODULE_ID__.prototype.sort=function(){if(arguments[0])
+this.setSortKey(arguments[0]);var key=this.getSortKey();var lhs1,lhs2,rhs1,rhs2;this.incidents.sort(function(a,b){if(key=="when"){lhs1=b.getDateObj();rhs1=a.getDateObj();lhs2="";rhs2="";}
+else if(key=="type"){lhs1=b["type"];rhs1=a["type"];lhs2=a["route"];rhs2=b["route"];}
+else if(key=="where"){lhs1=highwayName__MODULE_ID__(a["route"]);rhs1=highwayName__MODULE_ID__(b["route"]);lhs2=b.getDateObj();rhs2=a.getDateObj();}
+else if(key=="title"){lhs1=a["title"];rhs1=b["title"];lhs2=a["route"];rhs2=b["route"];}
+if(lhs1>rhs1){return 1;}
+else if(lhs1<rhs1){return-1;}
+else{if(lhs2>rhs2)
+return 1;else if(lhs2<rhs2)
+return-1;else
+return 0;}});if(arguments[1]){this.renderData();}}
+IncidentList__MODULE_ID__.prototype.render=function(){var page=arguments[0]||"";this.renderGUI();this.renderData(page);}
+IncidentList__MODULE_ID__.prototype.renderGUI=function(){var page=arguments[0]||"";var html="";var divName=this.divGUI;if(!_gel(divName))
+return;if(page=="help"){html=""+"    <table border='0' cellspacing='0' id='d_header__MODULE_ID__'><tbody><tr>\n"+"    <td id='d_sort__MODULE_ID__' class='enabled'>&nbsp;"+"    </td>\n"+"    <td id='d_narrow__MODULE_ID__' class='enabled'>&nbsp;"+"    </td>\n"+"    <td id='d_help__MODULE_ID__' class='active'>\n"+"      <a href='' onclick='list__MODULE_ID__.toggleHelp(); return false;' title='Return to traffic information'><img src='"+base_img__MODULE_ID__+"511_help.gif' width='16' height='16' /> Help</a>"+"    </td>\n"+"    </tr></tbody></table>";}
+else{html=""+"    <table border='0' cellspacing='0' id='d_header__MODULE_ID__'><tbody><tr>\n"+"    <td id='d_sort__MODULE_ID__' class='enabled'>"+"      <a href='' onclick='menuClick__MODULE_ID__(\"d_sort__MODULE_ID__\", \"d_sort_edit__MODULE_ID__\"); return false;' title='Sort the list of items'><img src='"+base_img__MODULE_ID__+"511_sort.gif' width='16' height='16' /> Sort</a>"+"    </td>\n"+"    <td id='d_narrow__MODULE_ID__' class='enabled'>"+"      <a href='' onclick='menuClick__MODULE_ID__(\"d_narrow__MODULE_ID__\", \"d_narrow_edit__MODULE_ID__\"); return false;' title='Narrow the list of items'><img src='"+base_img__MODULE_ID__+"511_narrow.gif' width='16' height='16' /> Narrow</a>"+"    </td>\n"+"    <td id='d_help__MODULE_ID__' class='enabled'>\n"+"      <a href='' onclick='list__MODULE_ID__.toggleHelp(); return false;' title='Get help for this gadget.'><img src='"+base_img__MODULE_ID__+"511_help.gif' width='16' height='16' /> Help</a>"+"    </td>\n"+"    </tr></tbody></table>";}
+html+=""+"    <div id='d_sort_edit__MODULE_ID__'>"+"    Sort items by their <select onchange='if(this.selectedIndex>=0) {sort__MODULE_ID__(this.options[this.selectedIndex].value);}' onblur='list__MODULE_ID__.save(key_sort__MODULE_ID__);' title=''>\n"+"        <option value='type' title='Sort by item type, then by location.' "+(this.getSortKey()=="type"?"selected='selected'":"")+">type</option>\n"+"        <!--<option value='title' title='Sort by item title, then by location.' "+(this.getSortKey()=="title"?"selected='selected'":"")+">title</option>-->\n"+"        <option value='where' title='Sort by item location, then by time.' "+(this.getSortKey()=="where"?"selected='selected'":"")+">location</option>\n"+"        <option value='when' title='Sort by item time.' "+(this.getSortKey()=="when"?"selected='selected'":"")+">time</option>\n"+"      </select>\n"+"    </div>\n"+"    <div id='d_narrow_edit__MODULE_ID__'>"+"    <form>"+"    <select id='d_narrow_sel__MODULE_ID__' onchange='filter__MODULE_ID__(this.form.d_narrow_txt__MODULE_ID__.value, this.options[this.selectedIndex].value);' onblur='list__MODULE_ID__.save(key_filtl__MODULE_ID__);'>"+"      <option value='hide' "+(this.getFilterList()=="hide"?"selected='selected'":"")+">Hide</option>"+"      <option value='show' "+(this.getFilterList()=="show"?"selected='selected'":"")+">Show</option>"+"    </select>"+"    items that happened at "+"    <img src='"+base_img__MODULE_ID__+"511_arrow_tdr.gif' width='16' height='16' /><br />"+"    <input type='text' onkeyup='filter__MODULE_ID__(this.value, this.form.d_narrow_sel__MODULE_ID__.options[this.form.d_narrow_sel__MODULE_ID__.selectedIndex].value);' onblur='list__MODULE_ID__.save(key_filtt__MODULE_ID__);' id='d_narrow_txt__MODULE_ID__' value='"+this.getFilterText()+"' title='US-101 S or 101, Candlestick Park, etc.' /><br /><span class='example'>(US-101 S or 101, Candlestick Park, etc.)</span>"+"    </form>"+"    </div>\n\n";_gel(divName).innerHTML=html;}
+IncidentList__MODULE_ID__.prototype.renderData=function(){var page=arguments[0]||"";var html="";var divName=this.divData;if(!_gel(divName))
+return;if(page=="loading"){html='<img src="http://boolean.googlepages.com/511_loading.gif" width="16" height="16" style="margin-top:3px;" /> Loading traffic information from 511.org</div>';}
+else{for(var i=0;i<this.incidents.length;i++){var c_incident=this.incidents[i];if(c_incident.displayAll=="none")
+continue;var c_style=i>0?"":"border-top:0;";var c_icon=c_incident.icon.replace("&lt;","<").replace("&gt;",">").replace("/icon_","511_");var c_class=c_incident.displayInfo=="none"?"i_top ":"i_top_on ";var c_time=c_incident.type.toLowerCase()!="construction"?"    <td class='i_time'>"+c_incident.getTime()+"</td>":"";var c_whenfor="";switch(c_incident.type.toLowerCase()){case"construction":c_whenfor="This construction began on "+c_incident.getDateObj().formatDate("l, F j")+".";break;case"event":c_whenfor="This event will start at "+c_incident.getTime()+" and should last about "+minutesToMinHours__MODULE_ID__(c_incident.duration)+".";break;case"incident":c_whenfor="This incident was reported at "+c_incident.getTime()+" and should last about "+minutesToMinHours__MODULE_ID__(c_incident.duration)+".";break;}
+var map_link="";if(c_incident.doMap)
+map_link=""+"<a href='http://maps.google.com/maps?q="+encodeURI(c_incident.street+(c_incident.cross?" and "+c_incident.cross:"")+", "+c_incident.city+", CA")+"' target='_blank' title=\"Show a map of this item's location\">Map</a>";html+=""+"  <div class='i_item'>"+"  <table class='"+c_class+"' id='i_top__MODULE_ID___"+c_incident.id+"' style='"+c_style+"' onclick='incidentClick__MODULE_ID__(\""+c_incident.id+"\");' onmouseover='incidentOver__MODULE_ID__(\""+c_incident.id+"\");' onmouseout='incidentOut__MODULE_ID__(\""+c_incident.id+"\");' border='0' cellspacing='0' width='100%'><tbody><tr>"+"  \n"+"    <td class='i_title'><span>"+c_incident.route+"</span>"+
+(c_incident.title?", "+c_incident.title:"")+"    </td>"+
+c_time+"    <td class='i_icon'>"+c_icon+"</td>"+"  </tr></tbody></table>\n"+"  <div class='i_bot' id='i_bot__MODULE_ID___"+c_incident.id+"' style='display:"+c_incident.displayInfo+";'>\n"+"    <div class='i_desc'>"+c_incident.desc+"</div>\n"+"    <div class='i_whenfor'>"+c_whenfor+"</div>\n"+"    <div class='i_link'>"+"    "+(c_incident.doMap?map_link+" <span class='separator'>|</span>":"")+"      <a href='"+base_511__MODULE_ID__+c_incident.link+"' target='_blank' title='Show detailed information for this item'>More info</a>\n"+"    </div>\n"+"  </div>\n"+"  </div>\n\n";}
+if(!html&&this.length()==0)
+html="<div class='error'>D'oh! It looks like 511.org might be down at the moment.  Try reloading in a minute or two.</div>";else if(!html)
+html="<div class='error'>Oops! You narrowed the items down to nothing.  Try broadening your search a bit.</div>";}
+_gel(divName).innerHTML=html;this.lastScreen="incidents";}
+IncidentList__MODULE_ID__.prototype.renderHelp=function(){var source=_gel("help_html__MODULE_ID__");var target=_gel(this.divData);if(!target)
+return;if(source){var html=source.innerHTML;target.innerHTML=html;}
+this.lastScreen="help";}
+IncidentList__MODULE_ID__.prototype.toggleHelp=function(){if(this.lastScreen=="help")
+this.render();else{this.renderGUI("help");this.renderHelp();}}
+function Incident(){this.icon=arguments[0].trim()||"";this.type=(/title="([a-zA-z]*?)"/.exec(this.icon))[1];this.route=arguments[1].trim()||"";this.start=arguments[2]||new Date(0);this.duration=arguments[3].trim()||"";this.desc=arguments[4].trim()||"";this.link=arguments[5].trim()||"";this.id=this.link.substring(this.link.indexOf("id=")+3);this.title=(arguments[6]||"").replace(/-/g," ").toProperCase().trim();this.title=this.title.substring(0,this.title.indexOf("On")).trim();this.displayInfo="none";this.displayAll="block";this.street="";this.cross="";this.city="";this.doMap=false;var matches=/^(.*):\s*(.*?)\s(on|before|after|to|entering at|exiting at|at|area of|past|approaching)\s(.*?)(\s(on|before|after|to|entering at|exiting at|at|area of|past|approaching)\s(.*?)\s*)?\((.*)\)\s*(.*)$/.exec(this.desc);if(matches){if(matches[7])
+this.street=normAddress__MODULE_ID__(matches[7]).trim();if(matches[4])
+this.cross=normAddress__MODULE_ID__(matches[4]).trim();if(matches[8])
+this.city=matches[8].trim();if(!this.street&&this.cross){this.street=this.cross;this.cross="";}}
+if(this.street&&this.city.toLowerCase()!="unincorporated")
+this.doMap=true;}
+Incident.prototype.getDateObj=function(){if(this.start)
+return this.start;return"";}
+Incident.prototype.getTime=function(){if(this.start)
+return this.start.formatDate("g:i a");return"";}
+function init_prefs__MODULE_ID__(){prefs__MODULE_ID__=new _IG_Prefs(__MODULE_ID__);}
+function setFromPrefs__MODULE_ID__(){var c_obj;c_obj=_gel(id_form_title__MODULE_ID__);if(c_obj){var c_title=prefs__MODULE_ID__.getString("title");if(c_obj.value.toLowerCase()!=c_title.toLowerCase()){list__MODULE_ID__.setTitle(c_title);c_obj.value=c_title;}}
+var c_hobj=_gel(id_form_height__MODULE_ID__);var c_bobj=_gel(id_form_bestfit__MODULE_ID__);var c_height=prefs__MODULE_ID__.getString("height");var c_bestfit=prefs__MODULE_ID__.getString("bestfit").toLowerCase();var either=false;if(c_hobj&&c_hobj.value.toLowerCase()!=c_height){c_hobj.value=c_height;either=true;}
+if(c_bobj&&c_bobj.options[c_bobj.selectedIndex].value.toLowerCase()!=c_bestfit){for(var i=0;i<c_bobj.options.length;i++){if(c_bobj.options[i].value.toLowerCase()==c_bestfit)
+c_bobj.selectedIndex=i;}
+either=true;}
+if(either)
+list__MODULE_ID__.setHeight(c_height,c_bestfit);var c_fontsize=prefs__MODULE_ID__.getString("fontsize").toLowerCase();c_obj=_gel(id_form_fontsize__MODULE_ID__);if(c_obj.options[c_obj.selectedIndex].value.toLowerCase()!=c_fontsize){list__MODULE_ID__.setFontSize(c_fontsize);for(var i=0;i<c_obj.options.length;i++){if(c_obj.options[i].value.toLowerCase()==c_fontsize)
+c_obj.selectedIndex=i;}}}
+function setFromEditDiv__MODULE_ID__(){var objTitle=_gel(id_form_title__MODULE_ID__);if(objTitle)
+list__MODULE_ID__.setFontSize(objTitle.value);var objHeight=_gel(id_form_height__MODULE_ID__);var objBestfit=_gel(id_form_bestfit__MODULE_ID__);if(objHeight&&objBestfit)
+list__MODULE_ID__.setHeight(objHeight.value,objBestfit.options[objBestfit.selectedIndex].value);var objFontsize=_gel(id_form_fontsize__MODULE_ID__);if(objFontsize)
+list__MODULE_ID__.setFontSize(objFontsize.options[objFontsize.selectedIndex].value);}
+function modifyEditDiv__MODULE_ID__(){var objTitle=_gel(id_form_title__MODULE_ID__);var objHeight=_gel(id_form_height__MODULE_ID__);var objBestfit=_gel(id_form_bestfit__MODULE_ID__);var objFontsize=_gel(id_form_fontsize__MODULE_ID__);var objEditForm=_gel(id_form__MODULE_ID__);var objCancelLink=_gel(id_edit__MODULE_ID__).childNodes[1]||undefined;var objSaveButton=_gel("save___MODULE_ID__");if(!objTitle||!objHeight||!objBestfit||!objFontsize||!objEditForm||!objCancelLink||!objSaveButton)
+return false;if(typeof objTitle.onkeyup=="function")
+objTitle.onkeyup=function(){objTitle.onkeyup();list__MODULE_ID__.setTitle(objTitle.value);};else
+objTitle.onkeyup=function(){list__MODULE_ID__.setTitle(objTitle.value);};if(typeof objTitle.onfocus=="function")
+objTitle.onfocus=function(){objTitle.onfocus();objectHighlight__MODULE_ID__("*title","on");};else
+objTitle.onfocus=function(){objectHighlight__MODULE_ID__("*title","on");};if(typeof objTitle.onblur=="function")
+objTitle.onblur=function(){objTitle.onblur();objectHighlight__MODULE_ID__("*title","off");};else
+objTitle.onblur=function(){objectHighlight__MODULE_ID__("*title","off");};if(typeof objHeight.onkeyup=="function")
+objHeight.onkeyup=function(){objHeight.onkeyup();list__MODULE_ID__.setHeight(objHeight.value,objBestfit.options[objBestfit.selectedIndex].value);};else
+objHeight.onkeyup=function(){list__MODULE_ID__.setHeight(objHeight.value,objBestfit.options[objBestfit.selectedIndex].value);};if(typeof objHeight.onfocus=="function")
+objHeight.onfocus=function(){objHeight.onfocus();objectHighlight__MODULE_ID__('*gadget','on');};else
+objHeight.onfocus=function(){objectHighlight__MODULE_ID__('*gadget','on');};if(typeof objHeight.onblur=="function")
+objHeight.onblur=function(){objHeight.onblur();objectHighlight__MODULE_ID__('*gadget','off');};else
+objHeight.onblur=function(){objectHighlight__MODULE_ID__('*gadget','off');};if(typeof objBestfit.onchange=="function")
+objBestfit.onchange=function(){objBestfit.onchange();list__MODULE_ID__.setHeight(objHeight.value,objBestfit.options[objBestfit.selectedIndex].value);};else
+objBestfit.onchange=function(){list__MODULE_ID__.setHeight(objHeight.value,objBestfit.options[objBestfit.selectedIndex].value);};if(typeof objBestfit.onfocus=="function")
+objBestfit.onfocus=function(){objBestfit.onfocus();objectHighlight__MODULE_ID__('*gadget','on');};else
+objBestfit.onfocus=function(){objectHighlight__MODULE_ID__('*gadget','on');};if(typeof objBestfit.onblur=="function")
+objBestfit.onblur=function(){objBestfit.onblur();objectHighlight__MODULE_ID__('*gadget','off');};else
+objBestfit.onblur=function(){objectHighlight__MODULE_ID__('*gadget','off');};if(typeof objFontsize.onchange=="function")
+objFontsize.onchange=function(){objFontsize.onchange();list__MODULE_ID__.setFontSize(objFontsize.options[objFontsize.selectedIndex].value);};else
+objFontsize.onchange=function(){list__MODULE_ID__.setFontSize(objFontsize.options[objFontsize.selectedIndex].value);};objEditForm.reset=setFromPrefs__MODULE_ID__;objCancelLink.onclick=function(){objEditForm.reset=setFromPrefs__MODULE_ID__;return _cedit("__MODULE_ID__");};objSaveButton.onclick=function(){objEditForm.reset=function(){};list__MODULE_ID__.save('title',objTitle.value);list__MODULE_ID__.save('height',objHeight.value);list__MODULE_ID__.save('bestfit',objBestfit.options[objBestfit.selectedIndex].value);list__MODULE_ID__.save('fontsize',objFontsize.options[objFontsize.selectedIndex].value);return _cedit("__MODULE_ID__");};}
+function objectHighlight__MODULE_ID__(){var flag=arguments[1]||"";var args=arguments[2]||"";var name=arguments[0]||"";if(name=="*gadget")
+name=id_gadget__MODULE_ID__;else if(name=="*title")
+name=id_title__MODULE_ID__;var obj=_gel(name);if(!obj)
+return false;var tborder,rborder,bborder,lborder;var style="1px solid #000000";if(flag=="on"){if(args){if(args.indexOf("top")!=-1)
+tborder=style;if(args.indexOf("right")!=-1)
+rborder=style;if(args.indexOf("bottom")!=-1)
+bborder=style;if(args.indexOf("left")!=-1)
+lborder=style;}
+else
+tborder=rborder=bborder=lborder=style;}
+else if(flag=="off")
+tborder=rborder=bborder=lborder="0";else
+tborder=rborder=bborder=lborder="0";obj.style.borderTop=tborder||"0";obj.style.borderRight=rborder||"0";obj.style.borderBottom=bborder||"0";obj.style.borderLeft=lborder||"0";}
+function sort__MODULE_ID__(field){if(list__MODULE_ID__)
+list__MODULE_ID__.sort(field,1);}
+function filter__MODULE_ID__(str,val){if(list__MODULE_ID__){list__MODULE_ID__.filter(str,val);list__MODULE_ID__.renderData();}}
+function incidentOver__MODULE_ID__(incident_id){var divBottom=_gel("i_bot__MODULE_ID___"+incident_id);var divTop=_gel("i_top__MODULE_ID___"+incident_id);if(!divTop||!divBottom)
+return false;divTop.style.cursor="pointer";if(divBottom.style.display!="block"){divTop.className="i_top_over";}}
+function incidentOut__MODULE_ID__(incident_id){var divBottom=_gel("i_bot__MODULE_ID___"+incident_id);var divTop=_gel("i_top__MODULE_ID___"+incident_id);if(!divTop||!divBottom)
+return false;divTop.style.cursor="default";if(divBottom.style.display=="none"){divTop.className="i_top";}}
+function incidentClick__MODULE_ID__(incident_id){var incident=list__MODULE_ID__.get(incident_id);var divBottom=_gel("i_bot__MODULE_ID___"+incident_id);var divTop=_gel("i_top__MODULE_ID___"+incident_id);if(!incident||!divBottom||!divTop)
+return false;if(!divBottom.style.display||divBottom.style.display=="none"){divTop.className="i_top_on";incident.displayInfo="block";divBottom.style.display=incident.displayInfo;}
+else{divTop.className="i_top";incident.displayInfo="none";divBottom.style.display=incident.displayInfo;}}
+function minutesToMinHours__MODULE_ID__(minutes){var answer=minutes;if(typeof minutes=="string")
+minutes=parseInt(minutes);if(isNaN(minutes)||typeof minutes!="number")
+return answer;if(minutes==1)
+answer="1 minute";else if(minutes<60)
+answer=minutes+" minutes";else if(minutes==60)
+answer="1 hour";else if(minutes>60&&minutes<1440&&minutes%60==0)
+answer=Math.floor(minutes/60)+" hours";else if(minutes>60&&minutes<1440)
+answer=Math.floor(minutes/60)+" hours and "+(minutes%60)+" minutes";else if(minutes==1440)
+answer="1 day";return answer;}
+function highwayName__MODULE_ID__(str){if(matches=/(I|US|CA)-(.*)/.exec(str)){return matches[2];}
+return str;}
+function normAddress__MODULE_ID__(addr){return addr.replace("N Northbound","").replace("S Southbound","").replace("W Westbound","").replace("E Eastbound","").replace("Northbound","").replace("Southbound","").replace("Westbound","").replace("Eastbound","");}
+function menuClick__MODULE_ID__(elm,elm2){if(typeof elm!="object")
+elm=_gel(elm);if(typeof elm2!="object")
+elm2=_gel(elm2);if(!elm)
+return false;var doHeight=(elm.id=="d_narrow__MODULE_ID__"?true:false);if(elm.className.indexOf("active")==-1){elm.className+=" active";}
+else{elm.className=elm.className.replace("active","");if(doHeight)list__MODULE_ID__.setHeight("yes");}
+toggleDisplay__MODULE_ID__(elm2);}
+function toggleDisplay__MODULE_ID__(elm){if(typeof elm!="object")
+elm=_gel(elm);if(!elm)
+return false;if(!elm.style.display||elm.style.display=="none")
+elm.style.display="block";else
+elm.style.display="none";}
+String.prototype.trim=function(){return this.replace(/^\s+|\s+$/,"");};String.prototype.toProperCase=function(){return this.toLowerCase().replace(/^(.)|\s(.)/g,function($1){return $1.toUpperCase();});}
+function getElementsByClassName__MODULE_ID__(oElm,strTagName,strClassName){var arrElements=(strTagName=="*"&&document.all)?document.all:oElm.getElementsByTagName(strTagName);var arrReturnElements=new Array();strClassName=strClassName.replace(/\-/g,"\\-");var oRegExp=new RegExp("(^|\\s)"+strClassName+"(\\s|$)");var oElement;for(var i=0;i<arrElements.length;i++){oElement=arrElements[i];if(oRegExp.test(oElement.className)){arrReturnElements.push(oElement);}}
+return(arrReturnElements)}
+</script>
+
+
+<style type="text/css" title="incidents__MODULE_ID__">
+#gui__MODULE_ID__ {font-size:inherit;}
+#data__MODULE_ID__ {clear:both;font-family:Arial, Helvetica, sans-serif;font-size:inherit;}
+#container__MODULE_ID__ {font-size:__UP_fontsize__;background:white;color:black;overflow:auto;padding-right:4px;}
+#container__MODULE_ID__ * {font-size:inherit;}
+#container__MODULE_ID__ p {font-size:inherit;margin:0;}
+#container__MODULE_ID__ .tail {margin-bottom:13px;}
+#container__MODULE_ID__ h3 {font-size:inherit;border-bottom:2px solid #e5ecf9;padding:2px;margin-bottom:3px;}
+#container__MODULE_ID__ a img {border:0;}
+#container__MODULE_ID__ form {display:inline;}
+#container__MODULE_ID__ dl {}
+#container__MODULE_ID__ dt {color:#1B4618;font-weight:bold;}
+#container__MODULE_ID__ dd {margin-left:5px;padding-left:5px;}
+#d_header__MODULE_ID__ {font-family:sans-serif;font-size:inherit;width:100%;}
+#d_header__MODULE_ID__ div {font-size:inherit;font-family:sans-serif;font-weight:bold;}
+#d_narrow_edit__MODULE_ID__ select, #d_narrow_edit__MODULE_ID__ input,
+#d_sort_edit__MODULE_ID__ select, #d_sort_edit__MODULE_ID__ input {font-size:inherit;}
+#d_sort__MODULE_ID__ {font-size:inherit;text-align:left;width:33%;height:20px;padding:2px;background:#FFFFCC;border-bottom:2px solid #cdd3de;}
+#d_sort_edit__MODULE_ID__ {display:none;font-size:inherit;background:#FFFFCC;padding:2px;border-bottom:2px solid #cdd3de;}
+#d_narrow__MODULE_ID__ {font-size:inherit;text-align:center;width:33%;height:20px;padding:2px;background:#FFFFCC;border-bottom:2px solid #cdd3de;}
+#d_narrow_edit__MODULE_ID__ {display:none;font-size:inherit;background:#FFFFCC;padding:2px;border-bottom:2px solid #cdd3de;}
+#d_narrow_txt__MODULE_ID__ {width:100%;}
+#d_help__MODULE_ID__ {font-size:inherit;text-align:right;width:33%;height:20px;padding:2px;background:#FFFFCC;border-bottom:2px solid #cdd3de;}
+#d_help__MODULE_ID__ li {margin-bottom:5px;margin-left:10px;border:1px solid green;}
+.i_item {clear:both;font-size:inherit;width:100%;}
+.i_top {font-size:inherit;border-top:1px dotted #cdd3de;border-bottom:0;background:transparent;}
+.i_top_over {font-size:inherit;border-top:1px dotted #cdd3de;border-bottom:0;background:#e5ecf9;}
+.i_top_on {font-size:inherit;border-top:1px solid #cdd3de;background:#e5ecf9;}
+.i_bot {clear:both;font-size:inherit;padding:2px;padding-bottom:5px;background:url("http://boolean.googlepages.com/511_infobg.gif") repeat-x bottom;}
+.i_title {font-size:inherit;padding-left:2px;vertical-align:middle;}
+.i_title span {font-weight:bold;}
+.i_time {font-size:95%;font-weight:normal;text-align:right;color:#808080;white-space:nowrap;vertical-align:middle;}
+.i_icon {width:17px;vertical-align:middle;}
+.i_whenfor {font-size:inherit;margin-top:10px;}
+.i_desc {font-size:inherit;}
+.i_link {font-size:inherit;text-align:right;margin-top:5px;}
+.i_link a {font-size:inherit;text-decoration:underline;color:blue;}
+.i_top, .i_icon, .i_icon img, .i_title {cursor:pointer;}
+.disabled {color:#FFFFCC;}
+.enabled {font-weight:bold;}
+.enabled a {color:black;text-decoration:none;}
+.active {font-weight:bold;}
+.active a {color:#1B4618;/*#000088;*/
+text-decoration:none;}
+.error {font-size:inherit;}
+.example {font-size:inherit;font-style:italic;color:#707070;}
+.separator {color:#A0A0A0;}
+ul.normlist {list-style-type:circle;padding-left:15px;margin-left:15px;margin-top:5px;padding-top:5px;}
+ul.normlist li {font-size:inherit;}
+ul.normlist li img {margin-right:3px;}
+ul.barelist {list-style-type:none;padding-left:0;margin-left:0;margin-top:5px;padding-top:5px;}
+ul.barelist li {font-size:inherit;}
+ul.barelist li img {margin-right:3px;}
+.myh3 {font-size:inherit;font-weight:bold;border-bottom:2px solid #e5ecf9;padding:2px;margin-bottom:3px;}
+</style>
+
+<!--[if IE]>
+<style type="text/css" title="incidents__MODULE_ID__">
+#container__MODULE_ID__ * {font-size: 100%;}
+#container__MODULE_ID__ table, #container__MODULE_ID__ caption {font-size: 100%;}
+#d_sort__MODULE_ID__ {width: 33%;}
+#d_narrow__MODULE_ID__ {width: 33%;}
+#d_help__MODULE_ID__ {width: 33%;}
+</style>
+<![endif]-->
+
+<div id="container__MODULE_ID__" style="height: __UP_height__px;">
+  <div id="gui__MODULE_ID__"><img src="http://boolean.googlepages.com/511_loading.gif" width="16" height="16" style="margin-top:3px;" /> Loading traffic information from 511.org</div>
+  <div id="data__MODULE_ID__"></div>
+</div>
+
+<div id="help_html__MODULE_ID__" style="display:none;">
+  <div class="myh3" id="h_overview__MODULE_ID__" style="margin-top:0;">Overview</div>
+  <p class="tail">This gadget displays traffic information for the San Francisco Bay Area.  It tracks traffic accidents, road construction and other nasty stuff reported by the CHP and Caltrans.  All information is obtained from <a href="http://traffic.511.org/traffic_text_all.asp" target="_blank">511.org</a>.</p>
+
+  <div class="myh3" style="margin-top:0;">Table of Contents</div>
+  <ul class="normlist">
+    <li><a href="#h_overview__MODULE_ID__">Overview</a></li>
+    <li><a href="#h_icons__MODULE_ID__">Traffic Icons</a></li>
+    <li><a href="#h_sort__MODULE_ID__">How to Sort</a></li>
+    <li><a href="#h_narrow__MODULE_ID__">How to Narrow</a></li>
+    <li><a href="#h_prefs__MODULE_ID__">Setting Preferences</a></li>
+    <li><a href="#h_credits__MODULE_ID__">Credits</a></li>
+    <li><a href="#h_compatibility__MODULE_ID__">Compatibility</a></li>
+    <li><a href="#h_about__MODULE_ID__">About the Author</a></li>
+  </ul>
+
+  <div class="myh3" id="h_icons__MODULE_ID__">Traffic Icons</div>
+  <ul class="barelist">
+    <li><img src="http://boolean.googlepages.com/511_incidents.gif" width="16" height="16" title="Incident" />Incidents refer to traffic accidents, stalled vehicles, debris, short term road construction, etc. that affect traffic conditions.</li>
+    <li><img src="http://boolean.googlepages.com/511_events.gif" width="16" height="16" title="Event" />Events refer to sporting events, concerts, parades, and any other public event that can affect traffic.</li>
+    <li><img src="http://boolean.googlepages.com/511_construction.gif" width="16" height="16" title="Construction" />Construction refers to areas where long term road construction is affecting traffic.</li>
+  </ul>
+
+  <div class="myh3" id="h_sort__MODULE_ID__">How to Sort</div>
+  <div class="tail">
+    <p>Use the sort function to set the order in which the traffic items display.</p>
+    <dl class="tail">
+      <dt>Type</dt><dd>Sorts by item type, then by location.</dd>
+      <dt>Where</dt><dd>Sorts by item location, then by time.</dd>
+      <dt>When</dt><dd>Sorts by item time.</dd>
+    </dl>
+
+  <div class="myh3" id="h_narrow__MODULE_ID__">How to Narrow</div>
+    <p>Use the narrow function to permanently show or hide traffic items you define.</p>
+    <dl class="tail">
+      <dt>Select hide then type I-880 N</dt><dd>Shows all items except those that occured on I-880 (Southbound).</dd>
+      <dt>Select show then type I-280, US-101 N</dt><dd>Shows only items that occured on I-280 (either direction) or US-101 (Northbound).</dd>
+      <dt>Clear the text field</dt><dd>Shows all items.</dd>
+    </dl>
+    <p>Parts of highways and road names work as well.  So typing 280 will work if you don't want to type I-280, and typing 80 will catch all items that happen at I-80, I-280, I-380, etc.</p>
+  </div>
+
+  <div class="myh3" id="h_prefs__MODULE_ID__">Setting Preferences</div>
+  <p class="tail">This gadget takes Google's familiar, blue edit window to a whole new level.  Changes are now seen in real time as you type.  If you don't like what you see just click cancel.  Plus, saving no longer requires reloading the page.  <a href="" onclick="return _edit(__MODULE_ID__);">Try it!</a></p>
+  <dl class="tail">
+    <dt onmouseover="objectHighlight__MODULE_ID__('*title', 'on');" onmouseout="objectHighlight__MODULE_ID__('*title', 'off');">Title</dt><dd onmouseover="objectHighlight__MODULE_ID__('*title', 'on');" onmouseout="objectHighlight__MODULE_ID__('*title', 'off');">The text that appears in the upper left hand corner of the gadget.</dd>
+    <dt>Height</dt><dd>The height of the gadget in pixels.</dd>
+    <dt>Best Fit</dt><dd>Collapse the gadget to be as tall as the list of items.  The gadget will never be taller than the height you specify above.  But it might make itself shorter to save some space on your Google Personalized Homepage.</dd>
+    <dt>Font Size</dt><dd>The size of the text.</dd>
+  </dl>
+
+  <div class="myh3" id="h_credits__MODULE_ID__">Credits</div>
+  <ul class="normlist tail">
+    <li>Data from <a href="http://traffic.511.org/" target="_blank">511.org</a></li>
+    <li>
+      <img src="http://boolean.googlepages.com/511_incidents.gif" width="16" height="16" title="Incident"/>
+      <img src="http://boolean.googlepages.com/511_events.gif" width="16" height="16" title="Event" />
+      <img src="http://boolean.googlepages.com/511_construction.gif" width="16" height="16" title="Construction"/>
+      icons by <a href="http://traffic.511.org/" target="_blank">511.org</a>
+    </li>
+    <li>
+      <img src="http://boolean.googlepages.com/511_sort.gif" width="16" height="16" title="Sort"/>
+      <img src="http://boolean.googlepages.com/511_narrow.gif" width="16" height="16" title="Narrow" />
+      <img src="http://boolean.googlepages.com/511_help.gif" width="16" height="16" title="Help"/>
+      <img src="http://boolean.googlepages.com/511_arrow_tdr.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_loading.gif" width="16" height="16" />
+      icons by <a href="http://www.famfamfam.com/lab/icons/silk/" target="_blank">famfamfam.com</a>
+    </li>
+  </ul>
+
+  <div class="myh3" id="h_compatibility__MODULE_ID__">Compatibility</div>
+  <p>This gadget has been observed playing nicely with the following browsers:</p>
+  <ul class="normlist">
+    <li>Firefox 1.5</li>
+    <li>Internet Explorer 6 and 7</li>
+    <li>Opera 8.51+ and 9</li>
+  </ul>
+  <p class="tail">If you are an OS X user and can test this gadget with Safari, please let me know how it works.</p>
+
+  <div class="myh3" id="h_about__MODULE_ID__">About the Author</div>
+  <p class="tail">If inclined, send comments, questions or criticisms to me by <a href="mailto:boolean+traffic@gmail.com">e-mail</a> or <a href="http://www.talisweb.com/justin/" target="_blank">web</a>.</p>
+  <p>Other gadgets I have developed:</p>
+  <ul class="normlist">
+    <li><a href="http://www.google.com/ig/directory?num=24&url=http://www.talisweb.com/justin/gmodules/localweather/localweather.xml&q=&start=0" target="_blank">Local Weather</a></li>
+  </ul>
+</div>
+
+]]></Content>
+</Module>

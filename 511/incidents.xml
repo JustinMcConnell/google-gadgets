@@ -1,0 +1,1808 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://boolean.googlepages.com/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "Bay Area Traffic"
+  title_url           = "http://traffic.511.org/"
+  description         = "This gadget displays traffic information for the San Francisco Bay Area.  It shows traffic accidents, road construction and other nasty stuff reported by the CHP and Caltrans.  All information is obtained from 511.org."
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_location     = "San Francisco, CA"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_link         = "http://www.talisweb.com/justin/"
+  author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+  author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+  author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+  screenshot          = "http://boolean.googlepages.com/511_screenshot.png"
+  thumbnail           = "http://boolean.googlepages.com/511_thumbnail.png"
+  render_inline       = "required"
+  scaling             = "true"
+  scrolling           = "false"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+</ModulePrefs>
+
+<UserPref name="title"    display_name="Title"     default_value="Bay Area Traffic" />
+<UserPref name="height"   display_name="Height"    default_value="200" />
+<UserPref name="bestfit"  display_name="Best Fit"  default_value="Yes" datatype="enum">
+  <EnumValue value="Yes"  display_value="Yes" />
+  <EnumValue value="No"   display_value="No"  />
+</UserPref>
+<UserPref name="fontsize" display_name="Font Size" default_value="75%" datatype="enum">
+  <EnumValue value="60%"  display_value="Smaller" />
+  <EnumValue value="67%"  display_value="Small"   />
+  <EnumValue value="75%"  display_value="Medium"  />
+  <EnumValue value="90%"  display_value="Large"   />
+  <EnumValue value="105%" display_value="Larger"  />
+</UserPref>
+
+<UserPref name="sort"        default_value="" datatype="hidden" />
+<UserPref name="narrow_text" default_value="" datatype="hidden" />
+<UserPref name="narrow_list" default_value="" datatype="hidden" />
+
+<Content type="html">
+<![CDATA[
+
+<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAZe6rgKtsMGD2_sLhyHjKMxTRERdeAiwZ9EeJWta3L_JZVS0bOBQcNoy0Rw3mE9d93L2xzyWjG5FHFA" type="text/javascript"></script>
+
+<script src="http://boolean.googlepages.com/tlabel.2.05.js" type="text/javascript"></script>
+
+<script src="http://boolean.googlepages.com/511_date.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+// Hello to the Googlers reading this gadget.  I hope you find my code easy on the eyes.
+
+
+// names of the hidden user preferences
+var key_sort__MODULE_ID__  = "sort";
+var key_filtt__MODULE_ID__ = "narrow_text";
+var key_filtl__MODULE_ID__ = "narrow_list";
+
+// IDs of some of the GPH HTML elements.  Seeing as they might change, this is a little brittle.
+var id_title__MODULE_ID__         = "m___MODULE_ID___url";
+var id_form__MODULE_ID__          = "m___MODULE_ID___form";
+var id_form_title__MODULE_ID__    = "m___MODULE_ID___0";
+var id_form_height__MODULE_ID__   = "m___MODULE_ID___1";
+var id_form_bestfit__MODULE_ID__  = "m___MODULE_ID___2";
+var id_form_fontsize__MODULE_ID__ = "m___MODULE_ID___3";
+var id_edit__MODULE_ID__          = "m___MODULE_ID___e";
+var id_gadget__MODULE_ID__        = "m___MODULE_ID__";
+
+// base URLs for "further detail" links and image links
+var base_511__MODULE_ID__  = "http://traffic.511.org/";
+var base_img__MODULE_ID__  = "http://boolean.googlepages.com/";
+
+// get user prefs from here
+var prefs__MODULE_ID__;
+
+// the list of incidents
+var list__MODULE_ID__;
+
+var map__MODULE_ID__;
+
+// Go go gadget main function!
+_IG_RegisterOnloadHandler(main__MODULE_ID__);
+function main__MODULE_ID__() {
+  init_prefs__MODULE_ID__();
+
+  // 3 divs for the incident list, the UI controls and the box that contains them
+  var divData = "data__MODULE_ID__";
+  var divGUI  = "gui__MODULE_ID__";
+  var divBox  = "container__MODULE_ID__";
+
+  // make Google refresh the cache every x minutes, x being the last number on the next line
+  var buster = Math.floor((new Date()).getTime() / 1000 / 60 / 5);
+
+  // load and scrape HTML from this URL
+  var url = base_511__MODULE_ID__ + "traffic_text_all.asp?" + buster;
+
+
+  _IG_FetchContent(url, function(html) {
+
+    // render a loading screen while loading
+    list__MODULE_ID__ = new IncidentList__MODULE_ID__(divData, divGUI, divBox);
+    list__MODULE_ID__.render("loading");
+
+    // get rid of all text outside the table that contains the data we want
+    var pos1 = html.indexOf('<table summary="Traffic incident listing" class="text-data sortable" id="data1">');
+    var pos2 = html.indexOf("</table>", pos1);
+
+    if(pos1 > -1 && pos2 > -1) {
+      // chop off the table tag
+      html = html.substring(pos1+81, pos2);
+
+      // replace long descriptions with shorter ones
+      html = html.replace("Estimated duration:", "Duration");
+      html = html.replace("Start time", "Start");
+      // add a pipe to the end of the descriptions so the split further down works
+      html = html.replace("Description", "Description|");
+
+      // replace carrots with char codes so we don't parse out images later on
+      html = html.replace(/<(img.*?)>/g, "&lt;$1&gt;");
+      // replace relative image paths with absolute ones
+      html = html.replace(/images(\/)/g, base_img__MODULE_ID__+"$1");
+      // deliminate fields with |
+      html = html.replace(/<a href="(traffic_text_\w*?_detail\.asp\?id=\w*?)">/g, "|$1|");
+      html = html.replace(/<\/td>/g, "|");
+
+      // get rid of all html tags
+      html = html.replace(/<.*?>/g, "");
+      // get rid of whitespace
+      html = html.replace(/\s{2,}/g, " ");
+      // quick formatting for description field
+      html = html.replace(/\s\:\s/g, ": ");
+      // trim whitespace and extra | from end of the string
+      html = html.replace(/\|\s+$/, "");
+      html = html.replace(/More info on /g, "");
+      html = _trim(html);
+
+      // a flat array that contains 7 slots for every incident
+      var parts;
+      if(html.substring(0, "type route start duration description".length).toLowerCase() ==
+         "type route start duration description".toLowerCase()) {
+        parts = html.split("|");
+      }
+      else {
+        parts = [];
+      }
+
+      if(parts.length >= 8) {
+        parts.shift();
+        for(var i=0; i<parts.length; i+=7) {
+          // parse the start datetime of the incident
+          var startDate = new Date(0);
+          var re = /([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{1,2})\s([0-9]{1,2}):([0-9]{1,2})\&nbsp;(pm|am)/;
+          var backrefs = re.exec(parts[i+2].trim());
+          if(backrefs) {
+            var startYear  = parseInt("20"+backrefs[3]) || 0;
+            var startMonth = parseInt(backrefs[1]-1)    || 0;
+            var startDate  = parseInt(backrefs[2])      || 0;
+            var startHour  = parseInt(backrefs[4])      || 0;
+            var startMin   = parseInt(backrefs[5])      || 0;
+
+            // next two if blocks are military time adjustments
+            if(backrefs[6].toLowerCase() == "pm" && startHour != 12)
+              startHour += 12;
+            if((backrefs[6].toLowerCase() == "am" && startHour == 12) || startHour == 24)
+              startHour = 0;
+
+            if(startYear > 0)
+              startDate = new Date(startYear, startMonth, startDate, startHour, startMin);
+            else
+              startDate = new Date(0); // start of epoch for error condition
+          }
+
+          // add the incident to the list
+          list__MODULE_ID__.add(new Incident(parts[i],
+                                             parts[i+1],
+                                             startDate,
+                                             parts[i+3],
+                                             parts[i+4],
+                                             parts[i+5],
+                                             parts[i+6]));
+        }
+      }
+    }
+
+    // set default sort and filter
+    list__MODULE_ID__.sort(prefs__MODULE_ID__.getString(key_sort__MODULE_ID__) || "when");
+    list__MODULE_ID__.setFilterList(prefs__MODULE_ID__.getString(key_filtl__MODULE_ID__) || "hide");
+    list__MODULE_ID__.setFilterText(prefs__MODULE_ID__.getString(key_filtt__MODULE_ID__) || "");
+    list__MODULE_ID__.filter(list__MODULE_ID__.getFilterText(),
+                             list__MODULE_ID__.getFilterList());
+
+    // render to the screen
+    list__MODULE_ID__.render();
+
+    // auto adjust height of the module if the user said so
+    list__MODULE_ID__.setHeight(prefs__MODULE_ID__.getString("height"), prefs__MODULE_ID__.getString("bestfit"));
+
+    // setup for the new user preference stuff
+    modifyEditDiv__MODULE_ID__();
+    insertMessage__MODULE_ID__();
+
+    map__MODULE_ID__ = new mapper("map__MODULE_ID__");
+    //map__MODULE_ID__.plotIncidents(list__MODULE_ID__.incidents);
+
+  });
+}
+
+
+function mapper(id) {
+  if(id)
+    this.id = id;
+  if(!this.id)
+    return false;
+  var obj = document.createElement("div");
+  obj.id = this.id;
+  document.getElementsByTagName("body")[0].appendChild(obj);
+  _gel(obj.id).style.visibility = "hidden";
+  _gel(obj.id).style.left = getPagePos__MODULE_ID__(_gel("data__MODULE_ID__"), 1) + "px";
+  _gel(obj.id).style.top = getPagePos__MODULE_ID__(_gel("data__MODULE_ID__")) + "px";
+
+  this.geocoder = new GClientGeocoder();
+
+  if (GBrowserIsCompatible()) {
+    this.map = new GMap2(_gel(obj.id));
+    this.map.addControl(new GSmallMapControl());
+    this.map.addControl(new GMapTypeControl());
+    this.map.setCenter(new GLatLng(37.8419, -122.3419), 9);
+    this.map.checkResize();
+  }
+}
+
+mapper.prototype.plotIncidents = function(incidents) {
+  for(var i=0; i<incidents.length; i++) {
+    this.plotIncident(incidents[i].getAddress());
+  }
+}
+
+mapper.prototype.plotIncident = function(address) {
+  this.geocoder.getLatLng(
+    address,
+    function(point) {
+      if (!point) {
+        console.log("Missed " + address);
+      } else {
+        console.log("Plotting " + address);
+        var marker = new GMarker(point);
+        GEvent.addListener(marker, "click", function() {
+          marker.openInfoWindowHtml(address);
+        });
+        map__MODULE_ID__.map.addOverlay(marker);
+      }
+    }
+  );
+}
+
+
+
+
+
+/**
+ * Stores the list of traffic incidents and its state, and is becoming the bloated brain class.
+ */
+function IncidentList__MODULE_ID__() {
+  this.incidents  = [];
+  this.sortKey    = "";
+  this.filterText = "";
+  this.filterList = "";
+  this.lastScreen = "";
+  this.divData    = arguments[0];
+  this.divGUI     = arguments[1];
+  this.divBox     = arguments[2];
+  this.bestFitOn  = prefs__MODULE_ID__.getString("bestfit").toLowerCase() == "yes";
+}
+
+/**
+ * Add an incident object to the list
+ */
+IncidentList__MODULE_ID__.prototype.add = function(incident) {
+  if(typeof incident != "object")
+    return false;
+  this.incidents.push(incident);
+}
+
+/**
+ * Get an incident object based on its 511.org incident id
+ */
+IncidentList__MODULE_ID__.prototype.get = function(incident_id) {
+  for(var i=0; i<this.incidents.length; i++) {
+    if(this.incidents[i].id == incident_id)
+      return this.incidents[i];
+  }
+  return false;
+}
+
+/**
+ * Get the number of incidents in the list.
+ */
+IncidentList__MODULE_ID__.prototype.length = function() {
+  if(typeof this.incidents == "object")
+    return this.incidents.length;
+  return 0;
+}
+
+
+/**
+ * Get/Set the key on which the list orders the incidents.
+ */
+IncidentList__MODULE_ID__.prototype.getSortKey = function() {
+  return this.sortKey || "";
+}
+IncidentList__MODULE_ID__.prototype.setSortKey = function(str) {
+  if(!str || typeof str != "string") {
+    return false;
+  }
+
+  this.sortKey = str;
+  return true;
+}
+
+
+/**
+ * Get/Set the show/hide flag for filtering the incidents.
+ */
+IncidentList__MODULE_ID__.prototype.getFilterList = function() {
+  return this.filterList || "";
+}
+IncidentList__MODULE_ID__.prototype.setFilterList = function(str) {
+  if(!str || typeof str != "string")
+    return false;
+
+  this.filterList = str;
+  return true;
+}
+
+/**
+ * Get/Set the text to filter the incidents with.
+ */
+IncidentList__MODULE_ID__.prototype.getFilterText = function() {
+  return this.filterText || "";
+}
+IncidentList__MODULE_ID__.prototype.setFilterText = function(str) {
+  if(typeof str != "string")
+    return false;
+
+  this.filterText = str;
+  return true;
+}
+
+/**
+ * Wraps some caching around _IG_Prefs.set()
+ */
+IncidentList__MODULE_ID__.prototype.save = function() {
+  var key    = arguments[0];
+  var val    = arguments[1];
+  // try to automatically grab the key value if it isn't specified in the paramters
+  if(!val) {
+    if(key == key_sort__MODULE_ID__ && this.sortKey)
+      val = this.sortKey;
+    else if(key == key_filtl__MODULE_ID__ && this.filterList)
+      val = this.filterList;
+    else if(key == key_filtt__MODULE_ID__ && (this.filterText || this.filterText==""))
+      val = this.filterText;
+  }
+
+  // only save if the value has changed
+  var oldVal = prefs__MODULE_ID__.getString(key);
+  if(key && val != oldVal) {
+    prefs__MODULE_ID__.set(key, val);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Set the title of the gadget.
+ */
+IncidentList__MODULE_ID__.prototype.setTitle = function(title) {
+  if(_gel(id_title__MODULE_ID__))
+    _gel(id_title__MODULE_ID__).innerHTML = title;
+}
+
+/**
+ * Set the font size of the gadget.
+ */
+IncidentList__MODULE_ID__.prototype.setFontSize = function(size) {
+  if(_gel(this.divBox))
+    _gel(this.divBox).style.fontSize = size;
+}
+
+/**
+ * Set the height of the gadget's container div.  This can be a specific pixel
+ * value.  Or If bestfit is true then it will get the height of the content when
+ * it is finished loading and set the container height to be exactly that.
+ */
+IncidentList__MODULE_ID__.prototype.setHeight = function() {
+  if(!_gel(this.divBox))
+    return false;
+
+  var height  = arguments[0] || "";
+  var bestfit = arguments[1] || "";
+
+  // do bestfit if height isn't a number
+  if(height.toLowerCase() == "yes") {
+    bestfit = "yes";
+  }
+  else if(height.toLowerCase() == "no") {
+    bestfit = "no";
+  }
+
+  if(bestfit.toLowerCase() == "yes") {
+    // don't make the gadget shorter than this
+    var min          = 200;
+    // value user typed into the text input
+    var user_height  = _gel(id_form_height__MODULE_ID__).value;
+    // content height reported by the browser
+    var stuff_height = _gel(this.divData).offsetHeight +
+                       _gel("d_sort__MODULE_ID__").offsetHeight;
+
+    // set minimum height if the content is less than a set minimum
+    // note: don't do this if the user is specifying the height
+    if(stuff_height <= min) {
+      _gel(this.divBox).style.height = min + "px";
+    }
+    // collapse the height to the content height
+    else if(stuff_height <= user_height) {
+      _gel(this.divBox).style.height = stuff_height + "px";
+    }
+    // don't set the height to be more than the user specified
+    else if(stuff_height > user_height) {
+      _gel(this.divBox).style.height = user_height + "px";
+    }
+
+    this.bestFitOn = true;
+  }
+  else {
+    if(!height) {
+      height = prefs__MODULE_ID__.getString("height");
+    }
+    _gel(this.divBox).style.height = height + "px";
+    this.bestFitOn = false;
+  }
+}
+
+
+/**
+ * Show or hide incidents based on the text the user typed.
+ */
+IncidentList__MODULE_ID__.prototype.filter = function(str, flag) {
+  // the comma delimited list of words to filter on
+  var rhsides = str.toLowerCase().replace(", ", ",").split(",");
+  var rhs, lhs;
+
+  // for each incident compare it with each word the user typed
+  // to see if it should be shown or hidden.
+  for(var i=0; i<this.incidents.length; i++) {
+    for(var j=0; j<rhsides.length; j++) {
+      rhs = rhsides[j].trim();
+      if(!rhs && j>0)
+        continue;
+
+      lhs = this.incidents[i].route.toLowerCase();
+      if(str == "") {
+        this.incidents[i].displayAll = "block";
+        j=rhsides.length;
+      }
+      else if(lhs.indexOf(rhs) != -1 && flag == "show") {
+        this.incidents[i].displayAll = "block";
+        j=rhsides.length;
+      }
+      else if(lhs.indexOf(rhs) != -1) {
+        this.incidents[i].displayAll = "none";
+        j=rhsides.length;
+      }
+      else if(lhs.indexOf(rhs) == -1 && flag == "show")
+        this.incidents[i].displayAll = "none";
+      else
+        this.incidents[i].displayAll = "block";
+    }
+  }
+
+  this.setFilterText(str);
+  this.setFilterList(flag);
+}
+
+/**
+ * Sort the list of incidents
+ */
+IncidentList__MODULE_ID__.prototype.sort = function() {
+  if(arguments[0])
+    this.setSortKey(arguments[0]);
+  var key = this.getSortKey();
+  var lhs1, lhs2, rhs1, rhs2;
+
+  this.incidents.sort(function(a, b) {
+    // time sorts by time
+    if(key == "when") {
+      lhs1 = b.getDateObj();
+      rhs1 = a.getDateObj();
+      lhs2 = a["route"];
+      rhs2 = b["route"];
+    }
+    // type sorts by incident type then location
+    else if(key == "type") {
+      lhs1 = b["type"]; // sort backwards
+      rhs1 = a["type"];
+      lhs2 = a["route"];
+      rhs2 = b["route"];
+    }
+    // location sorts by location then time
+    else if(key == "where") {
+      lhs1 = a["route"]; //highwayName__MODULE_ID__(a["route"]);
+      rhs1 = b["route"]; //highwayName__MODULE_ID__(b["route"]);
+      lhs2 = b.getDateObj();
+      rhs2 = a.getDateObj();
+    }
+    // title sorts by title then location
+    else if(key == "title") {
+      lhs1 = a["title"];
+      rhs1 = b["title"];
+      lhs2 = a["route"];
+      rhs2 = b["route"];
+    }
+
+    if(lhs1 > rhs1) {
+      return 1;
+    }
+    else if(lhs1 < rhs1) {
+      return -1;
+    }
+    else {
+      if(lhs2 > rhs2)
+        return 1;
+      else if(lhs2 < rhs2)
+        return -1;
+      else
+        return 0;
+    }
+  });
+
+  if(arguments[1]) {
+    this.renderData();
+  }
+}
+
+/**
+ * Render the top controls and the traffic list.
+ */
+IncidentList__MODULE_ID__.prototype.render = function() {
+  var page = arguments[0] || "";
+  this.renderGUI();
+  this.renderData(page);
+}
+
+/**
+ * Render the top controls.
+ */
+IncidentList__MODULE_ID__.prototype.renderGUI = function() {
+  var page    = arguments[0] || "";
+  var html    = "";
+  var divName = this.divGUI;
+  if(!_gel(divName))
+    return;
+
+  // if the user is at the help page, just draw the help link
+  if(page == "help") {
+    html = ""+
+      "    <table border='0' cellspacing='0' id='d_header__MODULE_ID__'><tbody><tr>"+
+      "    <td id='d_sort__MODULE_ID__' class='enabled'>&nbsp;"+
+      "    </td>"+
+      "    <td id='d_narrow__MODULE_ID__' class='enabled'>&nbsp;"+
+      "    </td>"+
+      "    <td id='d_map__MODULE_ID__' class='enabled'>&nbsp;"+
+      "    </td>"+
+      "    <td id='d_help__MODULE_ID__' class='active'>"+
+      "      <a href='' onclick='list__MODULE_ID__.toggleHelp(); return false;' title='Return to traffic information'><img src='"+base_img__MODULE_ID__+"511_help.gif' width='16' height='16' /> Help</a>"+
+      "    </td>"+
+      "    </tr></tbody></table>";
+  }
+  // if the user is at the traffic list, draw all links
+  else {
+    html = ""+
+      "    <table border='0' cellspacing='0' id='d_header__MODULE_ID__'><tbody><tr>"+
+      "    <td id='d_sort__MODULE_ID__' class='enabled'>"+
+      "      <a href='' onclick='menuClick__MODULE_ID__(\"d_sort__MODULE_ID__\", \"d_sort_edit__MODULE_ID__\"); return false;' title='Sort the list of items'><img src='"+base_img__MODULE_ID__+"511_sort.gif' width='16' height='16' /> Sort</a>"+
+      "    </td>"+
+      "    <td id='d_narrow__MODULE_ID__' class='enabled'>"+
+      "      <a href='' onclick='menuClick__MODULE_ID__(\"d_narrow__MODULE_ID__\", \"d_narrow_edit__MODULE_ID__\"); return false;' title='Narrow the list of items'><img src='"+base_img__MODULE_ID__+"511_narrow.gif' width='16' height='16' /> Narrow</a>"+
+      "    </td>"+
+      "    <td id='d_map__MODULE_ID__' class='enabled'>"+
+      "      <a href='' onclick='menuClick__MODULE_ID__(\"d_map__MODULE_ID__\", \"map__MODULE_ID__\"); return false;' title='Show the items on a map'><img src='"+base_img__MODULE_ID__+"511_map.gif' width='16' height='16' /> Map</a>"+
+      "    </td>"+
+      "    <td id='d_help__MODULE_ID__' class='enabled'>"+
+      "      <a href='' onclick='list__MODULE_ID__.toggleHelp(); return false;' title='Get help for this gadget.'><img src='"+base_img__MODULE_ID__+"511_help.gif' width='16' height='16' /> Help</a>"+
+      "    </td>"+
+      "    </tr></tbody></table>";
+  }
+
+  // sort and narrow controls
+  html += ""+
+    "    <div id='d_sort_edit__MODULE_ID__'>"+
+    "    Sort items by their <select onchange='if(this.selectedIndex>=0) {sort__MODULE_ID__(this.options[this.selectedIndex].value);}' onblur='list__MODULE_ID__.save(key_sort__MODULE_ID__);' title=''>"+
+    "        <option value='type' title='Sort by item type, then by location.' "+(this.getSortKey()=="type" ? "selected='selected'" : "")+">type</option>"+
+    "        <!--<option value='title' title='Sort by item title, then by location.' "+(this.getSortKey()=="title" ? "selected='selected'" : "")+">title</option>-->"+
+    "        <option value='where' title='Sort by item location, then by time.' "+(this.getSortKey()=="where" ? "selected='selected'" : "")+">location</option>"+
+    "        <option value='when' title='Sort by item time.' "+(this.getSortKey()=="when" ? "selected='selected'" : "")+">time</option>"+
+    "      </select>"+
+    "    </div>"+
+
+    "    <div id='d_narrow_edit__MODULE_ID__'>"+
+    "    <form>"+
+    "    <select id='d_narrow_sel__MODULE_ID__' onchange='filter__MODULE_ID__(this.form.d_narrow_txt__MODULE_ID__.value, this.options[this.selectedIndex].value);' onblur='list__MODULE_ID__.save(key_filtl__MODULE_ID__);'>"+
+    "      <option value='hide' "+(this.getFilterList()=="hide" ? "selected='selected'" : "")+">Hide</option>"+
+    "      <option value='show' "+(this.getFilterList()=="show" ? "selected='selected'" : "")+">Show</option>"+
+    "    </select>"+
+    "    items that happened at "+
+    "    <img src='"+base_img__MODULE_ID__+"511_arrow_tdr.gif' width='16' height='16' /><br />"+
+    "    <input type='text' onkeyup='filter__MODULE_ID__(this.value, this.form.d_narrow_sel__MODULE_ID__.options[this.form.d_narrow_sel__MODULE_ID__.selectedIndex].value);' onblur='list__MODULE_ID__.save(key_filtt__MODULE_ID__);' id='d_narrow_txt__MODULE_ID__' value='"+this.getFilterText()+"' title='US-101 S or 101, Candlestick Park, etc.' /><br /><span class='example'>(US-101 S or 101, Candlestick Park, etc.)</span>"+
+    "    </form>"+
+    "    </div>";
+
+  _gel(divName).innerHTML = html;
+}
+
+/**
+ * Render the traffic list.
+ */
+IncidentList__MODULE_ID__.prototype.renderData = function() {
+  var page    = arguments[0] || "";
+  var html    = "";
+  var divName = this.divData;
+  if(!_gel(divName))
+    return;
+
+  // loading page
+  if(page == "loading") {
+    html = '<img src="http://boolean.googlepages.com/511_loading.gif" width="16" height="16" style="margin-top:3px;" /> Loading traffic information from 511.org</div>';
+  }
+
+  // show incidents
+  else {
+    for(var i=0; i<this.incidents.length; i++) {
+      var c_incident = this.incidents[i];
+      if(c_incident.displayAll == "none")
+        continue;
+
+      var c_style   = i>0 ? "" : "border-top:0;";
+      var c_icon    = c_incident.icon.replace("&lt;", "<")
+                                     .replace("&gt;", ">")
+                                     .replace("/icon_", "511_");
+      var c_class   = c_incident.displayInfo == "none" ? "i_top " : "i_top_on ";
+      var c_time    = c_incident.type.toLowerCase() != "construction" ?
+                      "    <td class='i_time'>" +c_incident.getTime()+ "</td>" :
+                      "";
+
+      var c_whenfor = "";
+      switch(c_incident.type.toLowerCase()) {
+        case "construction":
+          c_whenfor = "This construction began on " + c_incident.getDateObj().formatDate("l, F j") + ".";
+          break;
+        case "event":
+          c_whenfor = "This event will start at " +c_incident.getTime()+ " and should last about " +minutesToMinHours__MODULE_ID__(c_incident.duration)+ ".";
+          break;
+        case "incident":
+          c_whenfor = "This incident was reported at " +c_incident.getTime()+ " and should last about " +minutesToMinHours__MODULE_ID__(c_incident.duration)+ ".";
+          break;
+      }
+
+      var map_link = "";
+      if(c_incident.doMap)
+        map_link = ""+
+          "<a href='http://maps.google.com/maps?q="+encodeURI(c_incident.getAddress())+ "' target='_blank' title=\"Show a map of this item's location\">Map</a>";
+
+
+      html += ""+
+        "  <div class='i_item'>"+
+        "  <table class='"+c_class+"' id='i_top__MODULE_ID___"+c_incident.id+"' style='"+c_style+"' onclick='incidentClick__MODULE_ID__(\""+c_incident.id+"\");' onmouseover='incidentOver__MODULE_ID__(\""+c_incident.id+"\");' onmouseout='incidentOut__MODULE_ID__(\""+c_incident.id+"\");' border='0' cellspacing='0' width='100%'><tbody><tr>"+
+        "    <td class='i_title'><span>" +c_incident.route+ "</span>"+
+             (c_incident.title ? ", " +c_incident.title : "")+
+        "    </td>"+
+        c_time+
+        "    <td class='i_icon'>" +c_icon+ "</td>"+
+        "  </tr></tbody></table>"+
+        "  <div class='i_bot' id='i_bot__MODULE_ID___"+c_incident.id+"' style='display:"+c_incident.displayInfo+";'>"+
+        "    <div class='i_desc'>" +c_incident.desc+ "</div>"+
+        "    <div class='i_whenfor'>"+c_whenfor+"</div>"+
+        "    <div class='i_link'>"+
+        "    "+(c_incident.doMap? map_link+" <span class='separator'>|</span>": "")+
+        "      <a href='"+base_511__MODULE_ID__+c_incident.link+"' target='_blank' title='Show detailed information for this item'>More info</a>"+
+        "    </div>"+
+        "  </div>"+
+        "  </div>";
+    }
+
+    if(!html && this.length() == 0)
+      html = "<div class='error'>D'oh! It looks like 511.org might be down at the moment.  Try reloading in a minute or two.</div>";
+    else if(!html)
+      html = "<div class='error'>Oops! You narrowed the items down to nothing.  Try broadening your search a bit.</div>";
+  }
+
+  _gel(divName).innerHTML = html;
+
+  this.lastScreen = "incidents";
+}
+
+/**
+ * Render the help page.
+ */
+IncidentList__MODULE_ID__.prototype.renderHelp = function() {
+  var source = _gel("help_html__MODULE_ID__");
+  var target = _gel(this.divData);
+  if(!target)
+    return;
+  if(source) {
+    var html = source.innerHTML;
+    target.innerHTML = html;
+  }
+  this.lastScreen = "help";
+}
+
+/**
+ * Toggle between the help page and the traffic list.
+ */
+IncidentList__MODULE_ID__.prototype.toggleHelp = function() {
+  if(this.lastScreen == "help")
+    this.render();
+  else {
+    this.renderGUI("help");
+    this.renderHelp();
+  }
+}
+
+/**
+ * Scroll the container div to a specific HTML Element or a pixel top.
+ * @param target - If target is a number, scroll to that pixel top.  If target
+ *   is a string, scroll to the pixel top of the HTML Element with that id.
+ */
+IncidentList__MODULE_ID__.prototype.scroll = function(target) {
+  if(!_gel(this.divBox))
+    return false;
+
+  // Everyone except IE lines things up better when setting to offsetTop minus this amount.
+  // I suspect its IE running in quirks mode and not rendering with the W3C box model.
+  var fuzz = 20;
+
+  if(typeof target == "number") {
+    _gel(this.divBox).scrollTop = target;
+  }
+  else if(typeof target == "string") {
+    if(!_gel(target))
+      return false;
+    _gel(this.divBox).scrollTop = _gel(target).offsetTop - fuzz;
+  }
+}
+
+
+/**
+ * A single traffic incident.
+ */
+function Incident() {
+  this.icon        = arguments[0].trim() || "";
+  this.type        = (/title="([a-zA-z]*?)"/.exec(this.icon))[1];
+  this.route       = arguments[1].trim() || "";
+  this.start       = arguments[2]        || new Date(0);
+  this.duration    = arguments[3].trim() || "";
+  this.desc        = arguments[4].trim() || "";
+  this.link        = arguments[5].trim() || "";
+  this.id          = this.link.substring(this.link.indexOf("id=")+3);
+  this.title       = (arguments[6] || "").replace(/-/g, " ").toProperCase().trim();
+  this.title       = this.title.substring(0, this.title.indexOf("On")).trim();
+  this.displayInfo = "none";   // none or block
+  this.displayAll  = "block";  // none or block
+  this.street      = "";
+  this.cross       = "";
+  this.city        = "";
+  this.doMap       = false;
+
+  var matches = /^(.*):\s*(.*?)\s(on|before|after|to|entering at|exiting at|at|area of|past|approaching|between)\s(.*?)(\s(on|before|after|to|entering at|exiting at|at|area of|past|approaching|between)\s(.*?)\s*)?\((.*)\)\s*(.*)$/.exec(this.desc);
+  if(matches) {
+    if(matches[7])
+      this.street  = normAddress__MODULE_ID__(matches[7]).trim();
+    if(matches[4])
+      this.cross   = normAddress__MODULE_ID__(matches[4]).trim();
+    if(matches[8])
+      this.city    = matches[8].trim();
+    if(!this.street && this.cross) {
+      this.street = this.cross;
+      this.cross  = "";
+    }
+  }
+
+  if(this.street && this.city.toLowerCase() != "unincorporated")
+    this.doMap = true;
+}
+
+
+/**
+ * Return the incident's start time as a date object
+ */
+Incident.prototype.getDateObj = function() {
+  if(this.start)
+    return this.start;
+  return "";
+}
+
+
+/**
+ * Return the incident's start time in the format of hour:minute am/pm -> 2:09 pm
+ */
+Incident.prototype.getTime = function() {
+  if(this.start)
+    return this.start.formatDate("g:i a");
+  return "";
+}
+
+Incident.prototype.getAddress = function() {
+  return this.street + (this.cross ? " and " + this.cross : "") + ", " +this.city+ ", CA";
+}
+
+
+
+/**
+ * Insert a message DIV into the DOM that mimics the GPH yellow alert box.
+ */
+function insertMessage__MODULE_ID__() {
+  var obj = document.createElement("div");
+  obj.id = "gui_msg__MODULE_ID__";
+  obj.style.padding = "2px 10px";
+  obj.style.display = "none";
+  obj.innerHTML = ""+
+    "<table cellpadding='5' align='center' style='background-color:#ffff99;'><tbody><tr>"+
+    "<td align='center'><font size='-1'><b><span id='gui_title__MODULE_ID__'>Hello :D</span></b></font></td>"+
+    "<td valign='top'>"+
+    "<a href='javascript:void(0);' onclick='hideMessage__MODULE_ID__();'>"+
+    "<img class='mdel' src='/ig/images/x.gif' alt='' />"+
+    "</a>"+
+    "</td></tr></tbody></table>";
+  _gel("undel_msg").parentNode.insertBefore(obj, _gel("undel_msg"))
+}
+
+
+/**
+ * Set the message text, show it on the page, and possibly hide it after a set time.
+ * @param html - The markup to show.
+ * @param timer - Number of milli seconds to wait before hiding the message.  Do not hide
+ *   the message if this is 0 or undefined.
+ */
+function showMessage__MODULE_ID__() {
+  var html  = arguments[0] || "";
+  var timer = arguments[1] || 0;
+  var box   = _gel("gui_msg__MODULE_ID__");
+  var text  = _gel("gui_title__MODULE_ID__");
+  if(!box || !text)
+    return false;
+  if(html)
+    text.innerHTML = html;
+  box.style.display = "block";
+
+  if(typeof timer == "number" && timer != 0)
+    setTimeout("hideMessage__MODULE_ID__()", timer);
+}
+
+
+/**
+ * Hide the message text.
+ */
+function hideMessage__MODULE_ID__() {
+  var obj = _gel("gui_msg__MODULE_ID__")
+  if(!obj)
+    return false;
+  obj.style.display = "none";
+}
+
+
+/**
+ * Initialize the user preferences
+ */
+function init_prefs__MODULE_ID__() {
+  prefs__MODULE_ID__ = new _IG_Prefs(__MODULE_ID__);
+}
+
+
+/**
+ * Set edit controls and their associated CSS back to what is stored in user prefs.
+ */
+function setFromPrefs__MODULE_ID__() {
+  var c_obj;
+
+  // set gadget title if it has changed
+  c_obj = _gel(id_form_title__MODULE_ID__);
+  if(c_obj) {
+    var c_title = prefs__MODULE_ID__.getString("title");
+    if(c_obj.value.toLowerCase() != c_title.toLowerCase()) {
+      list__MODULE_ID__.setTitle(c_title);
+      c_obj.value = c_title;
+    }
+  }
+
+  // get height and bestfit
+  var c_hobj    = _gel(id_form_height__MODULE_ID__);
+  var c_bobj    = _gel(id_form_bestfit__MODULE_ID__);
+  var c_height  = prefs__MODULE_ID__.getString("height");
+  var c_bestfit = prefs__MODULE_ID__.getString("bestfit").toLowerCase();
+  var either    = false;
+
+  // set edit control height
+  if(c_hobj && c_hobj.value.toLowerCase() != c_height) {
+    c_hobj.value = c_height;
+    either = true;
+  }
+
+  // set edit control bestfit
+  if(c_bobj && c_bobj.options[c_bobj.selectedIndex].value.toLowerCase() != c_bestfit) {
+    for(var i=0; i<c_bobj.options.length; i++) {
+      if(c_bobj.options[i].value.toLowerCase() == c_bestfit)
+        c_bobj.selectedIndex = i;
+    }
+    either = true;
+  }
+
+  // set gadget height
+  if(either)
+    list__MODULE_ID__.setHeight(c_height, c_bestfit);
+
+
+  // set fontsize
+  var c_fontsize = prefs__MODULE_ID__.getString("fontsize").toLowerCase();
+  c_obj = _gel(id_form_fontsize__MODULE_ID__);
+  if(c_obj.options[c_obj.selectedIndex].value.toLowerCase() != c_fontsize) {
+    list__MODULE_ID__.setFontSize(c_fontsize);
+
+    for(var i=0; i<c_obj.options.length; i++) {
+      if(c_obj.options[i].value.toLowerCase() == c_fontsize)
+        c_obj.selectedIndex = i;
+    }
+  }
+}
+
+
+/**
+ * Set CSS based on edit controls
+ */
+function setFromEditDiv__MODULE_ID__() {
+  // module title
+  var objTitle = _gel(id_form_title__MODULE_ID__);
+  if(objTitle)
+    list__MODULE_ID__.setFontSize(objTitle.value);
+
+  // height
+  var objHeight   = _gel(id_form_height__MODULE_ID__);
+  var objBestfit  = _gel(id_form_bestfit__MODULE_ID__);
+  if(objHeight && objBestfit)
+    list__MODULE_ID__.setHeight(objHeight.value,
+                                objBestfit.options[objBestfit.selectedIndex].value);
+
+  // fontsize
+  var objFontsize = _gel(id_form_fontsize__MODULE_ID__);
+  if(objFontsize)
+    list__MODULE_ID__.setFontSize(objFontsize.options[objFontsize.selectedIndex].value);
+}
+
+
+/**
+ * Play with the DOM and events so that the edit controls are much smarter.
+ */
+function modifyEditDiv__MODULE_ID__() {
+  var objTitle      = _gel(id_form_title__MODULE_ID__);
+  var objHeight     = _gel(id_form_height__MODULE_ID__);
+  var objBestfit    = _gel(id_form_bestfit__MODULE_ID__);
+  var objFontsize   = _gel(id_form_fontsize__MODULE_ID__);
+  var objEditForm   = _gel(id_form__MODULE_ID__);
+  var objCancelLink = _gel(id_edit__MODULE_ID__).childNodes[1] || undefined;
+  var objSaveButton = _gel("save___MODULE_ID__");
+
+  // just bail out if none of the needed elements are there -- no use in a partially working form
+  if(!objTitle || !objHeight || !objBestfit || !objFontsize || !objEditForm || !objCancelLink || !objSaveButton)
+    return false;
+
+  // gadget title
+  if(typeof objTitle.onkeyup == "function")
+    objTitle.onkeyup = function() {
+      objTitle.onkeyup(); list__MODULE_ID__.setTitle(objTitle.value);
+    };
+  else
+    objTitle.onkeyup = function() {
+      list__MODULE_ID__.setTitle(objTitle.value);
+    };
+
+  if(typeof objTitle.onfocus == "function")
+    objTitle.onfocus = function() {
+      objTitle.onfocus();
+      objectHighlight__MODULE_ID__("*title", "on");
+    };
+  else
+    objTitle.onfocus = function() {
+      objectHighlight__MODULE_ID__("*title", "on");
+    };
+
+  if(typeof objTitle.onblur == "function")
+    objTitle.onblur = function() {
+      objTitle.onblur();
+      objectHighlight__MODULE_ID__("*title", "off");
+    };
+  else
+    objTitle.onblur = function() {
+      objectHighlight__MODULE_ID__("*title", "off");
+    };
+
+  // gadget height
+  if(typeof objHeight.onkeyup == "function")
+    objHeight.onkeyup = function() {
+      objHeight.onkeyup();
+      list__MODULE_ID__.setHeight(objHeight.value, objBestfit.options[objBestfit.selectedIndex].value);
+    };
+  else
+    objHeight.onkeyup = function() {
+      list__MODULE_ID__.setHeight(objHeight.value, objBestfit.options[objBestfit.selectedIndex].value);
+    };
+
+  if(typeof objHeight.onfocus == "function")
+    objHeight.onfocus = function() {
+      objHeight.onfocus();
+      objectHighlight__MODULE_ID__('*gadget', 'on');
+    };
+  else
+    objHeight.onfocus = function() {
+      objectHighlight__MODULE_ID__('*gadget', 'on');
+    };
+
+  if(typeof objHeight.onblur == "function")
+    objHeight.onblur = function() {
+      objHeight.onblur();
+      objectHighlight__MODULE_ID__('*gadget', 'off');
+    };
+  else
+    objHeight.onblur = function() {
+      objectHighlight__MODULE_ID__('*gadget', 'off');
+    };
+
+  // bestfit
+  if(typeof objBestfit.onchange == "function")
+    objBestfit.onchange = function() {
+      objBestfit.onchange();
+      list__MODULE_ID__.setHeight(objHeight.value, objBestfit.options[objBestfit.selectedIndex].value);
+    };
+  else
+    objBestfit.onchange = function() {
+      list__MODULE_ID__.setHeight(objHeight.value, objBestfit.options[objBestfit.selectedIndex].value);
+    };
+
+  if(typeof objBestfit.onfocus == "function")
+    objBestfit.onfocus = function() {
+      objBestfit.onfocus();
+      objectHighlight__MODULE_ID__('*gadget', 'on');
+    };
+  else
+    objBestfit.onfocus = function() {
+      objectHighlight__MODULE_ID__('*gadget', 'on');
+    };
+
+  if(typeof objBestfit.onblur == "function")
+    objBestfit.onblur = function() {
+      objBestfit.onblur();
+      objectHighlight__MODULE_ID__('*gadget', 'off');
+    };
+  else
+    objBestfit.onblur = function() {
+      objectHighlight__MODULE_ID__('*gadget', 'off');
+    };
+
+  // fontsize
+  if(typeof objFontsize.onchange == "function")
+    objFontsize.onchange = function() {
+      objFontsize.onchange();
+      list__MODULE_ID__.setFontSize(objFontsize.options[objFontsize.selectedIndex].value);
+    };
+  else
+    objFontsize.onchange = function() {
+      list__MODULE_ID__.setFontSize(objFontsize.options[objFontsize.selectedIndex].value);
+    };
+
+
+  // don't let the edit controls' form reset itself and clobber settings
+  objEditForm.reset = setFromPrefs__MODULE_ID__;
+
+  // cancel link now resets the form controls' content from user prefs
+  objCancelLink.onclick = function() {
+    objEditForm.reset = setFromPrefs__MODULE_ID__;
+    //showMessage__MODULE_ID__("Changes have been canceled.", 5000);
+    return  _cedit("__MODULE_ID__");
+  };
+
+  // save button saves user prefs without a page refresh
+  objSaveButton.onclick = function(){
+    objEditForm.reset = function(){};
+    list__MODULE_ID__.save('title', objTitle.value);
+    list__MODULE_ID__.save('height', objHeight.value);
+    list__MODULE_ID__.save('bestfit', objBestfit.options[objBestfit.selectedIndex].value);
+    list__MODULE_ID__.save('fontsize', objFontsize.options[objFontsize.selectedIndex].value);
+    showMessage__MODULE_ID__("Changes have been saved.", 5000);
+    return _cedit("__MODULE_ID__");
+  };
+}
+
+
+/**
+ * Place a border around an HTMLElement.
+ * @param name - id of the HTMLElement to highlight.  *gadget and *height are prewired to
+ *   wrap the whole gadget or just the gadget's title.
+ * @param flag - on or off to turn the highlight on or off
+ * @param args - if this empty set the style to all borders.  if it contains
+ *   any of the keywords top, right, bottom or left it will set those borders appropriately.
+ */
+function objectHighlight__MODULE_ID__() {
+  var flag = arguments[1] || "";
+  var args = arguments[2] || "";
+  var name = arguments[0] || "";
+  if(name == "*gadget")
+    name = id_gadget__MODULE_ID__;
+  else if(name == "*title")
+    name = id_title__MODULE_ID__;
+  var obj = _gel(name);
+  if(!obj)
+    return false;
+
+  var tborder, rborder, bborder, lborder;
+  var style = "1px solid #000000";
+
+  // turn the highlight on
+  if(flag == "on") {
+    // set to individual borders
+    if(args){
+      if(args.indexOf("top") != -1)
+        tborder = style;
+      if(args.indexOf("right") != -1)
+        rborder = style;
+      if(args.indexOf("bottom") != -1)
+        bborder = style;
+      if(args.indexOf("left") != -1)
+        lborder = style;
+    }
+    // set the style to all borders
+    else
+      tborder = rborder = bborder = lborder = style;
+  }
+  // turn the highlight off
+  else if(flag == "off")
+    tborder = rborder = bborder = lborder = "0";
+  else
+    tborder = rborder = bborder = lborder = "0";
+
+  obj.style.borderTop    = tborder || "0";
+  obj.style.borderRight  = rborder || "0";
+  obj.style.borderBottom = bborder || "0";
+  obj.style.borderLeft   = lborder || "0";
+}
+
+
+/**
+ * Wrapper around sorting the list of traffic incidents
+ */
+function sort__MODULE_ID__(field) {
+  if(list__MODULE_ID__)
+    list__MODULE_ID__.sort(field, 1);
+}
+
+
+/**
+ * Wrapper around filtering the list of traffic incidents
+ */
+function filter__MODULE_ID__(str, val) {
+  if(list__MODULE_ID__) {
+    list__MODULE_ID__.filter(str, val);
+    list__MODULE_ID__.renderData();
+  }
+}
+
+
+/**
+ * Do some stuff when the user fires mouseover on a traffic incident quick info
+ */
+function incidentOver__MODULE_ID__(incident_id) {
+  var divBottom = _gel("i_bot__MODULE_ID___" + incident_id);
+  var divTop    = _gel("i_top__MODULE_ID___" + incident_id);
+  if(!divTop || !divBottom)
+    return false;
+
+  // change styles around so we're giving the user a cursor invitation
+  divTop.style.cursor = "pointer";
+  if(divBottom.style.display != "block") {
+    divTop.className = "i_top_over";
+  }
+}
+
+
+/**
+ * Do some stuff when the user fires mouseout on a traffic incident quick info
+ */
+function incidentOut__MODULE_ID__(incident_id) {
+  var divBottom = _gel("i_bot__MODULE_ID___" + incident_id);
+  var divTop    = _gel("i_top__MODULE_ID___" + incident_id);
+  if(!divTop || !divBottom)
+    return false;
+
+  divTop.style.cursor = "default";
+  if(divBottom.style.display == "none") {
+    divTop.className = "i_top";
+  }
+}
+
+
+/**
+ * Show or hide extended details for a traffic incident.
+ * @param incident_id - 511.org incident id
+ */
+function incidentClick__MODULE_ID__(incident_id) {
+  var incident  = list__MODULE_ID__.get(incident_id);
+  var divBottom = _gel("i_bot__MODULE_ID___" + incident_id);
+  var divTop    = _gel("i_top__MODULE_ID___" + incident_id);
+  if(!incident || !divBottom || !divTop)
+    return false;
+
+  if(!divBottom.style.display || divBottom.style.display == "none") {
+    divTop.className        = "i_top_on";
+    incident.displayInfo    = "block";
+    divBottom.style.display = incident.displayInfo;
+  }
+  else {
+    divTop.className        = "i_top";
+    incident.displayInfo    = "none";
+    divBottom.style.display = incident.displayInfo;
+  }
+}
+
+
+/**
+ * Pretty print an integer number of minutes to minutes, hours, days, etc.
+ * 1   -> 1 minute
+ * 35  -> 35 minutes
+ * 125 -> 2 hours and 5 minutes
+ */
+function minutesToMinHours__MODULE_ID__(minutes) {
+  var answer = minutes;
+  if(typeof minutes == "string")
+    minutes = parseInt(minutes);
+  if(isNaN(minutes) || typeof minutes != "number")
+    return answer;
+
+  if(minutes == 1)
+    answer = "1 minute";
+  else if(minutes < 60)
+    answer = minutes + " minutes";
+  else if(minutes == 60)
+    answer = "1 hour";
+  else if(minutes > 60 && minutes < 1440 && minutes % 60 == 0)
+    answer = Math.floor(minutes / 60) + " hours";
+  else if(minutes > 60 && minutes < 1440)
+    answer = Math.floor(minutes / 60) + " hours and " + (minutes % 60) + " minutes";
+  else if(minutes == 1440)
+    answer = "1 day";
+
+  return answer;
+}
+
+
+/**
+ * Strip the leading letters and dash from a highway name.
+ * I-280 -> 280
+ * CA-1 N -> 1 N
+ */
+function highwayName__MODULE_ID__(str) {
+  if(matches = /(I|US|CA)-(.*)/.exec(str)) {
+    return matches[2];
+  }
+  return str;
+}
+
+
+/**
+ * Scrub highways names down to a common format.  This is here mainly for Google Maps to
+ * better recognize addresses in the form of "Street and Highway, City, State".
+ */
+function normAddress__MODULE_ID__(addr) {
+  return addr.replace("N Northbound", "")
+             .replace("S Southbound", "")
+             .replace("W Westbound", "")
+             .replace("E Eastbound", "")
+             .replace("Northbound", "")
+             .replace("Southbound", "")
+             .replace("Westbound", "")
+             .replace("Eastbound", "");
+}
+
+
+
+/**
+ * Show or hide the sort or narrow menus
+ * @param elm - The HTMLElement that gets styled
+ * @param elm2 - The HTMLElement that gets shown or hidden
+ */
+function menuClick__MODULE_ID__(elm, elm2) {
+  if(typeof elm != "object")
+    elm = _gel(elm);
+  if(typeof elm2 != "object")
+    elm2 = _gel(elm2);
+  if(!elm)
+    return false;
+
+  var doHeight = (elm.id == "d_narrow__MODULE_ID__" ? true : false);
+
+  // toggle on
+  if(elm.className.indexOf("active") == -1) {
+    elm.className += " active";
+  }
+  // toggle off
+  else {
+    elm.className = elm.className.replace("active", "");
+    if(doHeight) list__MODULE_ID__.setHeight("yes");
+  }
+
+  toggleDisplay__MODULE_ID__(elm2);
+}
+
+
+/**
+ * Show or hide a HTMLElement
+ */
+function toggleDisplay__MODULE_ID__(elm) {
+  if(typeof elm != "object")
+    elm = _gel(elm);
+  if(!elm)
+    return false;
+
+  if(!elm.style.display || elm.style.display == "none") {
+    elm.style.display    = "block";
+    elm.style.visibility = "visible";
+  }
+  else {
+    elm.style.display   = "none";
+    elm.style.visbility = "hidden";
+  }
+}
+
+
+/**
+ * Add trim to the String
+ */
+String.prototype.trim = function() {
+  return this.replace(/^\s+|\s+$/, "");
+};
+
+
+/**
+ * http://www.codeproject.com/jscript/propercase.asp
+ */
+String.prototype.toProperCase = function() {
+  return this.toLowerCase().replace(/^(.)|\s(.)/g, function($1) { return $1.toUpperCase(); });
+}
+
+function getPagePos__MODULE_ID__(el, left) {
+  var val=0;
+  while(el != null) {
+    val += el["offset"+(left?"Left":"Top")];
+    el = el.offsetParent;
+  }
+  return val;
+}
+
+</script>
+
+
+<style type="text/css">
+#map__MODULE_ID__ {
+  width: 40%;
+  height: 40%;
+  position: absolute;
+  left: -100000px;
+  bottom: -100000px;
+  border: 1px solid black;
+}
+#gui__MODULE_ID__ {
+  font-size: inherit;
+}
+#data__MODULE_ID__ {
+  clear: both;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: inherit;
+}
+#container__MODULE_ID__ {
+  font-size: __UP_fontsize__;
+  background: white;
+  color: black;
+  overflow: auto;
+  padding-right: 4px;
+}
+#container__MODULE_ID__ * {
+  font-size: inherit;
+}
+#container__MODULE_ID__ p {
+  font-size: inherit;
+  margin: 0;
+}
+#container__MODULE_ID__ h3 {
+  font-size: inherit;
+  border-bottom: 2px solid #e5ecf9;
+  padding: 2px;
+  margin-bottom: 3px;
+}
+#container__MODULE_ID__ a img {
+  border: 0;
+}
+#container__MODULE_ID__ form {
+  display: inline;
+}
+
+#container__MODULE_ID__ dl {
+}
+#container__MODULE_ID__ dt {
+  color: #1B4618;
+  font-weight: bold;
+}
+#container__MODULE_ID__ dd {
+  margin-left: 5px;
+  padding-left: 5px;
+}
+
+#d_header__MODULE_ID__ {
+  font-family: sans-serif;
+  font-size: inherit;
+  width: 100%;
+}
+#d_header__MODULE_ID__ div {
+  font-size: inherit;
+  font-family: sans-serif;
+  font-weight: bold;
+}
+#d_narrow_edit__MODULE_ID__ select, #d_narrow_edit__MODULE_ID__ input,
+#d_sort_edit__MODULE_ID__ select, #d_sort_edit__MODULE_ID__ input {
+  font-size: inherit;
+}
+
+#d_sort__MODULE_ID__ {
+  font-size: inherit;
+  text-align: left;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_sort_edit__MODULE_ID__ {
+  display: none;
+  font-size: inherit;
+  background: #FFFFCC;
+  padding: 2px;
+  border-bottom: 2px solid #cdd3de;
+}
+
+#d_narrow__MODULE_ID__ {
+  font-size: inherit;
+  text-align: center;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_narrow_edit__MODULE_ID__ {
+  display: none;
+  font-size: inherit;
+  background: #FFFFCC;
+  padding: 2px;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_narrow_txt__MODULE_ID__ {
+  width: 100%;
+}
+
+#d_map__MODULE_ID__ {
+  font-size: inherit;
+  text-align: center;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+
+#d_help__MODULE_ID__ {
+  font-size: inherit;
+  text-align: right;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+
+#d_help__MODULE_ID__ li {
+  margin-bottom: 5px;
+  margin-left: 10px;
+  border: 1px solid green;
+}
+
+
+.i_item {
+  clear: both;
+  font-size: inherit;
+  width: 100%;
+}
+.i_top {
+  font-size: inherit;
+  border-top: 1px dotted #cdd3de;
+  border-bottom: 0;
+  background: transparent;
+}
+.i_top_over {
+  font-size: inherit;
+  border-top: 1px dotted #cdd3de;
+  border-bottom: 0;
+  background: #e5ecf9;
+}
+.i_top_on {
+  font-size: inherit;
+  border-top: 1px solid #cdd3de;
+  background: #e5ecf9;
+}
+.i_bot {
+  clear: both;
+  font-size: inherit;
+  padding: 2px;
+  padding-bottom: 5px;
+  background: url("http://boolean.googlepages.com/511_infobg.gif") repeat-x bottom;
+}
+.i_title {
+  font-size: inherit;
+  padding-left: 2px;
+  vertical-align: middle;
+}
+.i_title span {
+  font-weight: bold;
+}
+.i_time {
+  font-size: 95%;
+  font-weight: normal;
+  text-align: right;
+  color: #808080;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.i_icon {
+  width: 17px;
+  vertical-align: middle;
+}
+.i_whenfor {
+  font-size: inherit;
+  margin-top: 10px;
+}
+.i_desc {
+  font-size: inherit;
+}
+.i_link {
+  font-size: inherit;
+  text-align: right;
+  margin-top: 5px;
+}
+.i_link a {
+  font-size: inherit;
+  text-decoration: underline;
+  color: blue;
+}
+.i_top, .i_icon, .i_icon img, .i_title {
+  cursor: pointer;
+}
+
+.disabled {
+  color: #FFFFCC;
+}
+.enabled {
+  font-weight: bold;
+}
+.enabled a {
+  color: black;
+  text-decoration: none;
+}
+.active {
+  font-weight: bold;
+}
+.active a {
+  color: #1B4618;
+  text-decoration: none;
+}
+.error {
+  font-size: inherit;
+}
+.example {
+  font-size: inherit;
+  font-style: italic;
+  color: #707070;
+}
+.separator {
+  color: #A0A0A0;
+}
+#container__MODULE_ID__ .tail {
+  margin-bottom: 13px;
+}
+
+
+ul.normlist {
+  list-style-type: circle;
+  padding-left: 15px;
+  margin-left: 15px;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+ul.normlist li {
+  font-size: inherit;
+}
+ul.normlist li img {
+  margin-right: 3px;
+}
+
+ul.barelist {
+  list-style-type: none;
+  padding-left: 0;
+  margin-left: 0;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+ul.barelist li {
+  font-size: inherit;
+}
+ul.barelist li img {
+  margin-right: 3px;
+}
+.myh3 {
+  font-size: inherit;
+  font-weight: bold;
+  border-bottom: 2px solid #e5ecf9;
+  padding: 2px;
+  margin-bottom: 3px;
+}
+
+.toplink {
+  text-align: right;
+  margin-bottom: 13px;
+}
+.toplink img {
+  align: middle;
+}
+.toplink a, .toplink a:active, .toplink a:visited {
+  font-variant: small-caps;
+  color: black;
+  text-decoration: none;
+}
+
+</style>
+
+<!--[if IE]>
+<style type="text/css" title="incidents__MODULE_ID__">
+#container__MODULE_ID__ * {
+  font-size: 100%;
+}
+#container__MODULE_ID__ table, #container__MODULE_ID__ caption {
+  font-size: 100%;
+}
+</style>
+<![endif]-->
+
+<div id="container__MODULE_ID__" style="height: __UP_height__px;">
+  <div id="gui__MODULE_ID__"><img src="http://boolean.googlepages.com/511_loading.gif" width="16" height="16" style="margin-top:3px;" /> Loading traffic information from 511.org</div>
+  <div id="data__MODULE_ID__"></div>
+</div>
+
+<div id="help_html__MODULE_ID__" style="display:none;">
+  <div class="myh3" id="h_overview__MODULE_ID__" style="margin-top:0;">Overview</div>
+  <p class="tail">This gadget displays traffic information for the San Francisco Bay Area.  It shows traffic accidents, road construction and other nasty stuff reported by the CHP and Caltrans.  All information is obtained from <a href="http://traffic.511.org/traffic_text_all.asp" target="_blank">511.org</a>.</p>
+
+  <div class="myh3" id="h_toc__MODULE_ID__" style="margin-top:0;">Table of Contents</div>
+  <ul class="normlist">
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_overview__MODULE_ID__'); return false;">Overview</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_icons__MODULE_ID__'); return false;">Traffic Icons</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_sort__MODULE_ID__'); return false;">How to Sort</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_narrow__MODULE_ID__'); return false;">How to Narrow</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_prefs__MODULE_ID__'); return false;">Setting Preferences</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_credits__MODULE_ID__'); return false;">Credits</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_compatibility__MODULE_ID__'); return false;">Compatibility</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_about__MODULE_ID__'); return false;">About the Author</a></li>
+  </ul>
+
+
+  <div class="myh3" id="h_icons__MODULE_ID__">Traffic Icons</div>
+  <ul class="barelist">
+    <li><img src="http://boolean.googlepages.com/511_incidents.gif" width="16" height="16" title="Incident" />Incidents refer to traffic accidents, stalled vehicles, debris, short term road construction, etc. that affect traffic conditions.</li>
+    <li><img src="http://boolean.googlepages.com/511_events.gif" width="16" height="16" title="Event" />Events refer to sporting events, concerts, parades, and any other public event that can affect traffic.</li>
+    <li><img src="http://boolean.googlepages.com/511_construction.gif" width="16" height="16" title="Construction" />Construction refers to areas where long term road construction is affecting traffic.</li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_sort__MODULE_ID__">How to Sort</div>
+  <div class="tail">
+    <p>Use the sort function to set the order in which the traffic items display.</p>
+    <dl class="tail">
+      <dt>Type</dt><dd>Sorts by item type, then by location.</dd>
+      <dt>Where</dt><dd>Sorts by item location, then by time.</dd>
+      <dt>When</dt><dd>Sorts by item time.</dd>
+    </dl>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_narrow__MODULE_ID__">How to Narrow</div>
+    <p>Use the narrow function to permanently show or hide traffic items you define.</p>
+    <dl class="tail">
+      <dt>Select hide then type I-880 N</dt><dd>Shows all items except those that occured on I-880 (Southbound).</dd>
+      <dt>Select show then type I-280, US-101 N</dt><dd>Shows only items that occured on I-280 (either direction) or US-101 (Northbound).</dd>
+      <dt>Clear the text field</dt><dd>Shows all items.</dd>
+    </dl>
+    <p>Parts of highways and road names work as well.  So typing 280 will work if you don't want to type I-280, and typing 80 will catch all items that happen at I-80, I-280, I-380, etc.</p>
+  </div>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_prefs__MODULE_ID__">Setting Preferences</div>
+  <p class="tail">This gadget takes Google's familiar, blue edit window to a whole new level.  Changes are now seen in real time as you type.  If you don't like what you see just click cancel.  Plus, saving no longer requires reloading the page.  <a href="" onclick="return _edit(__MODULE_ID__);">Try it!</a></p>
+  <dl class="tail">
+    <dt onmouseover="objectHighlight__MODULE_ID__('*title', 'on');" onmouseout="objectHighlight__MODULE_ID__('*title', 'off');">Title</dt><dd onmouseover="objectHighlight__MODULE_ID__('*title', 'on');" onmouseout="objectHighlight__MODULE_ID__('*title', 'off');">The text that appears in the upper left hand corner of the gadget.</dd>
+    <dt>Height</dt><dd>The height of the gadget in pixels.</dd>
+    <dt>Best Fit</dt><dd>Collapse the gadget to be as tall as the list of items.  The gadget will never be taller than the height you specify above.  But it might make itself shorter to save some space on your Google Personalized Homepage.</dd>
+    <dt>Font Size</dt><dd>The size of the text.</dd>
+  </dl>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_credits__MODULE_ID__">Credits</div>
+  <ul class="normlist tail">
+    <li>Data from <a href="http://traffic.511.org/" target="_blank">511.org</a></li>
+    <li>
+      <img src="http://boolean.googlepages.com/511_incidents.gif" width="16" height="16" title="Incident"/>
+      <img src="http://boolean.googlepages.com/511_events.gif" width="16" height="16" title="Event" />
+      <img src="http://boolean.googlepages.com/511_construction.gif" width="16" height="16" title="Construction"/>
+      icons by <a href="http://traffic.511.org/" target="_blank">511.org</a>
+    </li>
+    <li>
+      <img src="http://boolean.googlepages.com/511_sort.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_narrow.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_map.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_help.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_arrow_tdr.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" />
+      <img src="http://boolean.googlepages.com/511_loading.gif" width="16" height="16" />
+      icons by <a href="http://www.famfamfam.com/lab/icons/silk/" target="_blank">famfamfam.com</a>
+    </li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_compatibility__MODULE_ID__">Compatibility</div>
+  <p>This gadget has been observed playing nicely with the following browsers:</p>
+  <ul class="normlist">
+    <li>Firefox 1.5</li>
+    <li>Internet Explorer 6 and 7</li>
+    <li>Opera 9</li>
+    <li>Safari</li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_about__MODULE_ID__">About the Author</div>
+  <p class="tail">If inclined, send comments, questions or criticisms to me by <a href="mailto:boolean+traffic@gmail.com">e-mail</a> or <a href="http://www.talisweb.com/justin/" target="_blank">web</a>.</p>
+  <p>Other gadgets I have developed:</p>
+  <ul class="normlist">
+    <li><a href="http://www.google.com/ig/directory?num=24&url=http://www.talisweb.com/justin/gmodules/localweather/localweather.xml&q=&start=0" target="_blank">Local Weather</a></li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list__MODULE_ID__.scroll('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+</div>
+
+]]>
+</Content>
+</Module>

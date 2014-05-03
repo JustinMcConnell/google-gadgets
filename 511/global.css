@@ -1,0 +1,219 @@
+#gui__MODULE_ID__ {
+  font-size: inherit;
+}
+#data__MODULE_ID__ {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: inherit;
+}
+#container__MODULE_ID__ {
+  font-size: __UP_fontsize__;
+  background: white;
+  color: black;
+  overflow: auto;
+  padding-right: 4px;
+}
+#container__MODULE_ID__ p {
+  font-size: inherit;
+  margin-top: 0;
+}
+#container__MODULE_ID__ h3 {
+  font-size: inherit;
+  border-bottom: 2px solid #e5ecf9;
+  padding: 2px;
+  margin-bottom: 3px;
+}
+#container__MODULE_ID__ a img {
+  border: 0;
+}
+#container__MODULE_ID__ form {
+  display: inline;
+}
+
+#edit_text__MODULE_ID__ td{
+  font-size: inherit;
+}
+
+#d_header__MODULE_ID__ {
+  font-family: sans-serif;
+  font-size: inherit;
+  /*font-size: 110%;*/
+  width: 100%;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_header__MODULE_ID__ div {
+  font-size: inherit;
+  font-family: sans-serif;
+  font-weight: bold;
+}
+#d_narrow_edit__MODULE_ID__ select, #d_narrow_edit__MODULE_ID__ input,
+#d_sort_edit__MODULE_ID__ select, #d_sort_edit__MODULE_ID__ input {
+  font-size: inherit;
+}
+
+#d_sort__MODULE_ID__ {
+  font-size: inherit;
+  text-align: left;
+  width: 33%;
+  padding: 2px;
+}
+#d_sort_edit__MODULE_ID__ {
+  display: none;
+  font-size: inherit;
+  background: #FFFFCC;
+  padding: 2px;
+  border-bottom: 2px solid #cdd3de;
+}
+
+#d_narrow__MODULE_ID__ {
+  font-size: inherit;
+  text-align: center;
+  width: 33%;
+  padding: 2px;
+}
+#d_narrow_edit__MODULE_ID__ {
+  display: none;
+  font-size: inherit;
+  background: #FFFFCC;
+  padding: 2px;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_narrow_txt__MODULE_ID__ {
+  width: 100%;
+}
+
+#d_help__MODULE_ID__ {
+  font-size: inherit;
+  text-align: right;
+  width: 33%;
+  padding: 2px;
+}
+
+#d_help__MODULE_ID__ li {
+  margin-bottom: 5px;
+  margin-left: 10px;
+  border: 1px solid green;
+}
+
+
+.i_item {
+  font-size: inherit;
+  width: 100%;
+}
+.i_top {
+  font-size: inherit;
+  border-top: 1px dotted #cdd3de;
+  border-bottom: 0;
+  background: transparent;
+  padding: 0;
+}
+.i_top_over {
+  font-size: inherit;
+  border-top: 1px dotted #cdd3de;
+  border-bottom: 0;
+  background: #e5ecf9;
+  padding: 0;
+}
+.i_top_on {
+  font-size: inherit;
+  border-top: 1px solid #cdd3de;
+  background: #e5ecf9;
+  padding: 0;
+}
+.i_bot {
+  font-size: inherit;
+  padding: 2px;
+  padding-bottom: 5px;
+  background: url("http://www.talisweb.com/justin/gmodules/511/infobg.gif") repeat-x bottom;
+}
+.i_title {
+  font-size: inherit;
+  padding-left: 2px;
+  vertical-align: middle;
+}
+.i_time {
+  font-size: 95%;
+  font-weight: normal;
+  text-align: right;
+  color: #808080;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.i_icon {
+  width: 17px;
+  vertical-align: middle;
+}
+.i_icon img {
+
+}
+.i_whenfor {
+  font-size: inherit;
+  margin-top: 10px;
+}
+.i_desc {
+  font-size: inherit;
+}
+.i_link {
+  font-size: inherit;
+  text-align: right;
+  margin-top: 5px;
+}
+.i_link a {
+  font-size: inherit;
+  text-decoration: underline;
+  color: blue;
+}
+.i_top, .i_icon, .i_icon img, .i_title {
+  cursor: pointer;
+}
+
+
+.enabled {
+  font-weight: bold;
+}
+.enabled a {
+  color: black;
+  text-decoration: none;
+}
+.active {
+  font-weight: bold;
+}
+.active a {
+  color: #1B4618;
+  /*#000088;*/
+  text-decoration: none;
+}
+.error {
+  font-size: inherit;
+}
+.example {
+  font-style: italic;
+  font-size: 90%;;
+  color: #707070;
+}
+.separator {
+  color: #A0A0A0;
+}
+
+ul.normlist {
+  padding-left: 15px;
+  margin-left: 15px;
+}
+ul.normlist li {
+  font-size: inherit;
+}
+ul.normlist li img {
+  margin-right: 3px;
+}
+
+ul.barelist {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+ul.barelist li {
+  font-size: inherit;
+}
+ul.barelist li img {
+  margin-right: 3px;
+}

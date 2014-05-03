@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+
+  <ModulePrefs
+    title="__UP_title__"
+    title_url="http://traffic.511.org/"
+    description="Realtime traffic information for the San Francisco Bay Area via 511.org" author="Justin McConnell"
+    author_location="San Francisco, CA 94107"
+    author_email="boolean+gmodules@gmail.com"
+    author_affiliation="http://www.talisweb.com/justin/"
+    screenshot=""
+    thumbnail=""
+    render_inline="optional"
+    height="170"
+    scaling="true"
+    scrolling="true"
+    singleton="true">
+    <Locale lang="en" country="us" />
+  </ModulePrefs>
+  <UserPref name="thekey" default_value="" datatype="hidden" />
+  <UserPref name="title" display_name="Title" default_value="511.org" />
+
+  <Content type="html">
+    <![CDATA[
+
+    <script src="http://www.talisweb.com/justin/gmodules/localweather/formatDate.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+      var prefs = new _IG_Prefs(__MODULE_ID__);
+      var list;
+      var outputDiv = "container";
+      var base_511 = "http://traffic.511.org/";
+      var base_img = "http://www.talisweb.com/justin/gmodules/511/";
+      _IG_RegisterOnloadHandler(main);
+
+      function main() {
+        _IG_FetchContent(base_511+"traffic_text_all.asp?a="+Math.random(), function(html) {
+          // get rid of all text outside the table that contains the data we want
+          pos1 = html.indexOf('<table summary="Traffic incident listing" class="text-data sortable" id="data1">');
+          pos2 = html.indexOf("</table>", pos1);
+          html = html.substring(pos1+81, pos2);
+
+          // replace long descriptions with shorter ones
+          html = html.replace("Estimated duration:", "Duration");
+          html = html.replace("Start time", "Start");
+          // add a pipe to the end of the descriptions so the split further down works
+          html = html.replace("Description", "Description|");
+
+          // replace carrots with char codes so we don't parse out images later on
+          html = html.replace(/<(img.*?)>/g, "&lt;$1&gt;");
+          // replace relative image paths with absolute ones
+          html = html.replace(/images(\/)/g, base_img+"$1");
+          // deliminate fields with |
+          html = html.replace(/<a href="(traffic_text_\w*?_detail\.asp\?id=\d*?)">/g, "|$1|");
+          html = html.replace(/<\/td>/g, "|");
+
+          // get rid of all html tags
+          html = html.replace(/<.*?>/g, "");
+          // get rid of whitespace
+          html = html.replace(/\s{2,}/g, " ");
+          // quick formatting for description field
+          html = html.replace(/\s\:\s/g, ": ");
+          // trim whitespace and extra | from end of the string
+          html = html.replace(/\|\s+$/, "");
+          html = html.replace(/More info on /g, "");
+
+
+
+
+          parts = html.split("|");
+
+          parts.shift();
+
+
+          list = new IncidentList();
+          for(i=0; i<parts.length; i+=7) {
+            // 5/6/06 9:30&nbsp;pm
+            re = /([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{1,2})\s([0-9]{1,2}):([0-9]{1,2})\&nbsp;(pm|am)/;
+            backrefs = re.exec(parts[i+2].trim());
+            startYear = "20"+backrefs[3];
+            startMonth = parseInt(backrefs[1])-1;
+            startHour = backrefs[6].toLowerCase() == "am" ?
+                          backrefs[4] :
+                          parseInt(backrefs[4]) + 12;
+            if(startHour == 24)
+              startHour = 0;
+
+            startDate = new Date(startYear, startMonth, backrefs[2], startHour, backrefs[5]);
+            //alert("\nyear: " + startYear + "\nmonth: " + startMonth + "\nday: " + backrefs[2] + "\nhour: " + startHour + "\nmin: " + backrefs[5] + "\ndate: " + startDate);
+
+
+            //alert([parts[i],parts[i+1],parts[i+2],parts[i+3],parts[i+4],parts[i+5],parts[i+6]].join("\n"));
+            list.add(new Incident(parts[i],parts[i+1],startDate,parts[i+3],parts[i+4],parts[i+5],parts[i+6]));
+          }
+          list.sort("when");
+          list.render(outputDiv);
+        });
+      }
+
+      function IncidentList() {
+        this.incidents = [];
+        this.sortKey   = "";
+        this.blacklist;
+      }
+      IncidentList.prototype.add = function(incident) {
+        this.incidents.push(incident);
+      }
+      IncidentList.prototype.length = function() {
+        return this.incidents.length;
+      }
+
+      IncidentList.prototype.setSortKey = function(key) {
+        if(typeof key != "string") {
+          return false;
+        }
+
+        this.sortKey = key;
+        return true;
+      }
+      IncidentList.prototype.getSortKey = function(key) {
+        return this.sortKey;
+      }
+
+      IncidentList.prototype.setFilter = function(blacklist) {
+        this.blacklist = blacklist;
+      }
+
+      IncidentList.prototype.sort = function() {
+        if(arguments[0])
+          this.setSortKey(arguments[0]);
+        key = this.getSortKey();
+
+        this.incidents.sort(function(a, b) {
+          // time sorts by time
+          if(key == "when") {
+            lhs1 = b.getDateObj();
+            rhs1 = a.getDateObj();
+            lhs2 = "";
+            rhs2 = "";
+          }
+          // type sorts by incident type then time
+          else if(key == "type") {
+            lhs1 = a["type"];
+            rhs1 = b["type"];
+            lhs2 = b.getDateObj();
+            rhs2 = a.getDateObj();
+          }
+          // location sorts by location then time
+          else if(key == "where") {
+            lhs1 = a["route"];
+            rhs1 = b["route"];
+            lhs2 = b.getDateObj();
+            rhs2 = a.getDateObj();
+          }
+          // title sorts by title then location
+          else if(key == "title") {
+            lhs1 = a["title"];
+            rhs1 = b["title"];
+            lhs2 = a["route"];
+            rhs2 = b["route"];
+          }
+
+          if(lhs1 > rhs1) {
+            return 1;
+          }
+          else if(lhs1 < rhs1) {
+            return -1;
+          }
+          else {
+            if(lhs2 > rhs2)
+              return 1;
+            else if(lhs2 < rhs2)
+              return -1;
+            else
+              return 0;
+          }
+        });
+
+        if(arguments[1]) {
+          this.render(outputDiv);
+        }
+      }
+
+      IncidentList.prototype.render = function(divName) {
+        if(!_gel(divName))
+          return;
+
+        html = ""+
+          "\n  <table border='0' cellspacing='0' id='d_header'><tr>\n"+
+          "    <td id='d_title'>Traffic Information</td>\n"+
+          "    <td id='d_sort'>"+
+          "      Sort: \n"+
+          "      <select onchange='sort(this.options[this.selectedIndex].value);'>\n"+
+          "        <option value='type' "+(this.getSortKey()=="type" ? "selected='selected'" : "")+">Type</option>\n"+
+          "        <option value='title' "+(this.getSortKey()=="title" ? "selected='selected'" : "")+">Title</option>\n"+
+          "        <option value='where' "+(this.getSortKey()=="where" ? "selected='selected'" : "")+">Where</option>\n"+
+          "        <option value='when' "+(this.getSortKey()=="when" ? "selected='selected'" : "")+">When</option>\n"+
+          "      </select>\n"+
+          "    </td>\n"+
+          "  </tr></table>\n\n";
+
+        for(i=0; i<this.incidents.length; i++) {
+          c_incident = this.incidents[i];
+          c_icon     = c_incident.icon.replace("&lt;", "<").replace("&gt;", ">");
+          c_class2   = i%2 == 0 ? "odd" : "odd";
+          c_time     = c_incident.type.toLowerCase() != "construction" ?
+                       "    <td class='i_time'>" +c_incident.getTime()+ "</td>" :
+                       "";
+
+          c_whenfor = "";
+          switch(c_incident.type.toLowerCase()) {
+            case "construction":
+              c_whenfor = "This construction began on " + c_incident.getDateObj().formatDate("l, F j") + ".";
+              break;
+            case "event":
+              c_whenfor = "This event will start at " +c_incident.getTime()+ " and should last for " +minutesToMinHours(c_incident.duration)+ ".";
+              break;
+            case "incident":
+              c_whenfor = "This incident was reported at " +c_incident.getTime()+ " and should last for " +minutesToMinHours(c_incident.duration)+ ".";
+              break;
+          }
+
+
+          html += ""+
+            "  <table class='i_top "+c_class2+"' id='i_top"+i+"' onclick='incidentClick(\"i_bot"+i+"\");' onmouseover='styleOver(\"i_top"+i+"\");' onmouseout='styleOut(\"i_top"+i+"\");' border='0' cellspacing='0' width='98%'>"+
+            "  <tr>\n"+
+            "    <td class='i_title'>" +c_incident.route+
+                 (c_incident.title ? ", " +c_incident.title : "")+
+            "    </td>"+
+            c_time+
+            "    <td class='i_icon'>" +c_icon+ "</td>"+
+            "  </tr></table>\n"+
+            "  <div class='i_bot' id='i_bot"+i+"' style='display:"+c_incident.display+";'>\n"+
+            "    <div class='i_desc'>" +c_incident.desc+ "</div>\n"+
+            "    <div class='i_whenfor'>"+c_whenfor+"</div>\n"+
+            "    <div class='i_link'>\n"+
+            "      <span id='blacklist"+c_incident.id+"'><input type='checkbox' onclick='plague.handle(\"" +c_incident.id+ "\");' /> Blacklist</span> <span class='separator'>|</span> "+
+            "      <a href='"+base_511+c_incident.link+"' target='_blank'>More info</a>\n"+
+            "    </div>\n"+
+            "  </div>\n\n";
+        }
+
+        _gel(divName).innerHTML = html;
+      }
+
+      function Incident() {
+        this.icon      = arguments[0].trim() || "";
+        this.type      = (/title="([a-zA-z]*?)"/.exec(this.icon))[1];
+        this.route     = arguments[1].trim() || "";
+        this.start     = arguments[2]        || new Date();
+        this.duration  = arguments[3].trim() || "";
+        this.desc      = arguments[4].trim() || "";
+        this.link      = arguments[5].trim() || "";
+        this.id        = this.link.substring(this.link.indexOf("id=")+3);
+        this.title     = (arguments[6] || "").replace(/-/g, " ").toProperCase().trim();
+        this.title     = this.title.substring(0, this.title.indexOf("On")).trim();
+        this.display   = "none";  // none or block
+      }
+
+      Incident.prototype.getDate = function() {
+        if(this.start)
+          return this.start.formatDate("l");
+        return "";
+      }
+      Incident.prototype.getDateObj = function() {
+        if(this.start)
+          return this.start;
+        return "";
+      }
+      Incident.prototype.getTime = function() {
+        if(this.start)
+          return this.start.formatDate("g:i a");
+        return "";
+      }
+
+
+      function Blacklister() {
+        this.incidents = [];
+      }
+      Blacklister.prototype.add = function(id) {
+        if(this.incidents)
+          this.incidents.push(id);
+      }
+      Blacklister.prototype.index = function(id) {
+        for(i=0; this.incidents.length; i++) {
+          if(this.incidents[i] == id) {
+            return i;
+          }
+        }
+        return -1;
+      }
+      Blacklister.prototype.remove = function(id) {
+        index = this.index(id);
+        if(index > -1 && index < this.incidents.length) {
+          return this.incidents.splice(index, 1);
+        }
+        return false;
+      }
+      Blacklister.prototype.load = function(prefs, keyName) {
+        jsonCache = prefs.getString(keyName);
+        if(jsonCache)
+          eval("jsonCache="+jsonCache);
+        this.incidents = [];
+        for(i=0; i<jsonCache.length; i++)
+          this.incidents.push(jsonCache[i]);
+
+      }
+      Blacklister.prototype.save = function(prefs, keyName) {
+        jsonCache = "[";
+        for(i=0; i<this.incidents.length; i++)
+          jsonCache += '"' +this.incidents[i]+ '", ';
+        jsonCache = jsonCache.substring(jsonCache.length-2) + "]";
+        prefs.set(keyName, jsonCache)
+      }
+      Blacklister.prototype.handle = function(id) {
+        if(this.index(id) == -1)
+          this.add(id);
+        else
+          this.remove(id);
+      }
+
+
+
+
+      function sort(field) {
+        list.sort(field, 1);
+      }
+
+      function styleOver(divTop) {
+        if(typeof divTop == "string")
+          divTop = _gel(divTop);
+        divBottom = _gel("i_bot" + divTop.id.substring(5));
+        divTop.style.cursor = "pointer";
+
+        if(divBottom.style.display != "block")
+          divTop.style.backgroundColor = "#e5ecf9";
+      }
+
+      function styleOut(divTop) {
+        if(typeof divTop == "string")
+          divTop = _gel(divTop);
+        divBottom = _gel("i_bot" + divTop.id.substring(5));
+
+        divTop.style.cursor = "default";
+        if(divBottom.style.display == "none") {
+          divTop.style.backgroundColor = "transparent";
+        }
+
+      }
+
+      function incidentClick(divBottom) {
+        if(typeof divBottom == "string")
+          divBottom = _gel(divBottom);
+        divTop = _gel("i_top" + divBottom.id.substring(5));
+        if(!divBottom.style.display || divBottom.style.display == "none") {
+          divBottom.style.display      = "block";
+          divTop.style.backgroundColor = "#e5ecf9";
+          divTop.style.borderTop       = "1px solid #cdd3de";
+          divTop.style.borderBottom    = "1px dashed #cdd3de";
+        }
+        else {
+          divBottom.style.display      = "none";
+          divTop.style.backgroundColor = "transparent";
+          divTop.style.borderTop       = "1px dashed #cdd3de";
+          divTop.style.borderBottom    = "0";
+        }
+      }
+
+      function minutesToMinHours(minutes) {
+        answer = minutes;
+        if(typeof minutes == "string")
+          minutes = parseInt(minutes);
+        if(typeof minutes != "number")
+          return answer;
+
+        if(minutes == 1)
+          answer = "1 minute";
+        else if(minutes < 60)
+          answer = minutes + " minutes";
+        else if(minutes == 60)
+          answer = "1 hour";
+        else if(minutes > 60 && minutes < 1440 && minutes % 60 == 0)
+          answer = Math.floor(minutes / 60) + " hours";
+        else if(minutes > 60 && minutes < 1440)
+          answer = Math.floor(minutes / 60) + " hours and " + (minutes % 60) + " minutes";
+        else if(minutes == 1440)
+          answer = "1 day";
+
+        return answer;
+      }
+
+      function getAttr(attr, textor) {
+        myArray = /title="(.*?)"/.exec(textor);
+        if(myArray[1])
+          return myArray[1];
+        return "";
+      }
+
+      String.prototype.trim = function() { return this.replace(/^\s+|\s+$/, ''); };
+
+      //http://www.codeproject.com/jscript/propercase.asp
+      String.prototype.toProperCase = function() {
+        return this.toLowerCase().replace(/^(.)|\s(.)/g,
+            function($1) { return $1.toUpperCase(); });
+      }
+
+    </script>
+
+
+    <style type="text/css">
+    #container {
+      font-size: 72.5%;
+      background: white;
+      color: black;
+      padding-right: 4px;
+    }
+
+    #d_header {
+      font-family: sans-serif;
+      width: 98%;
+    }
+    #d_title {
+      font-size: 95%;
+      font-weight: bold;
+      font-family: inherit;
+      font-variant: small-caps;
+      vertical-align: middle;
+    }
+    #d_sort {
+      font-size: 80%;
+      background: white;
+      color: black;
+      padding: 2px;
+      text-align: right;
+      vertical-align: middle;
+    }
+    #d_sort option, #d_sort select {
+      font-size: 90%;
+    }
+    #d_sort select {
+      border: 1px solid black;
+    }
+
+    .i_top {
+      font-size: 100%;
+      font-family: sans-serif;
+      border-top: 1px dashed #cdd3de;
+      padding: 0;
+    }
+    .i_bot {
+      font-size: 100%;
+      font-family: sans-serif;
+      padding: 2px;
+      margin-bottom: 5px;
+    }
+    .i_title {
+      padding-left: 2px;
+      vertical-align: middle;
+    }
+    .i_time {
+      text-align: right;
+      color: #808080;
+      font-size: 95%;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .i_icon {
+      width: 17px;
+      vertical-align: middle;
+    }
+    .i_icon img {
+
+    }
+    .i_whenfor {
+      margin-top: 10px;
+
+    }
+    .i_desc {
+    }
+    .i_link {
+      text-align: right;
+      margin-top: 5px;
+    }
+    .i_link a {
+    }
+
+    .i_top, .i_icon, .i_icon img, .i_title {
+      cursor: pointer;
+    }
+
+
+    .even {
+      background-color: #EAEAEA;
+    }
+    .odd {
+      background-color: transparent;
+    }
+    .hack {
+      clear: both;
+    }
+    .separator {
+      color: #A0A0A0;
+    }
+    </style>
+
+
+    <div id="container">
+      <table border="0" cellspacing="0" id="d_header"><tr>
+        <td id="d_title">Traffic Information</td>
+        <td id="d_sort">
+        Loading <img src="http://www.talisweb.com/justin/gmodules/511/loading.gif" width="11" height="16" />
+        </td>
+      </tr></table>
+    </div>
+
+    <div id="help">
+      <table border="0" cellspacing="0" id="d_header"><tr>
+        <td id="d_title">Traffic Information</td>
+        <td id="d_sort">
+        </td>
+      </tr></table>
+      <p>
+        <dl>
+          <dt><img src="http://www.talisweb.com/justin/gmodules/511/icon_incidents.gif" width="16" height="16" /></dt>
+          <dd></dd>
+          <dt><img src="http://www.talisweb.com/justin/gmodules/511/icon_events.gif" width="16" height="16" /></dt>
+          <dd></dd>
+          <dt><img src="http://www.talisweb.com/justin/gmodules/511/icon_construction.gif" width="16" height="16" /></dt>
+          <dd></dd>
+        </dl>
+      </p>
+    </div>
+
+    <textarea id="debug" cols="30" rows="8" style="display:none;"></textarea>
+
+    ]]>
+  </Content>
+</Module>
+

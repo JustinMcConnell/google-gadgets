@@ -1,0 +1,1 @@
+// This file is included by the Bay Area Traffic gadget to make an apache log entry.

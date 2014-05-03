@@ -1,0 +1,46 @@
+
+      function Blacklister() {
+        this.incidents = [];
+      }
+      Blacklister.prototype.add = function(id) {
+        if(this.incidents)
+          this.incidents.push(id);
+      }
+      Blacklister.prototype.index = function(id) {
+        for(var i=0; this.incidents.length; i++) {
+          if(this.incidents[i] == id) {
+            return i;
+          }
+        }
+        return -1;
+      }
+      Blacklister.prototype.remove = function(id) {
+        var index = this.index(id);
+        if(index > -1 && index < this.incidents.length) {
+          return this.incidents.splice(index, 1);
+        }
+        return false;
+      }
+      Blacklister.prototype.load = function(prefs, keyName) {
+        var jsonCache = prefs.getString(keyName);
+        if(jsonCache)
+          eval("jsonCache="+jsonCache);
+        this.incidents = [];
+        for(var i=0; i<jsonCache.length; i++)
+          this.incidents.push(jsonCache[i]);
+
+      }
+      Blacklister.prototype.save = function(prefs, keyName) {
+        var jsonCache = "[";
+        for(var i=0; i<this.incidents.length; i++)
+          jsonCache += '"' +this.incidents[i]+ '", ';
+        jsonCache = jsonCache.substring(jsonCache.length-2) + "]";
+        prefs.set(keyName, jsonCache)
+      }
+      Blacklister.prototype.handle = function(id) {
+        if(this.index(id) == -1)
+          this.add(id);
+        else
+          this.remove(id);
+      }
+

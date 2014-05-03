@@ -1,0 +1,483 @@
+<html>
+<head>
+  <title>511.org - Traffic: Traffic Information</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta http-equiv="Pragma" content="no-cache">
+
+    <meta http-equiv="refresh" content="300;URL=traffic_text_all.asp?refresh=300">
+
+  <script src="sorttable.js" type="text/javascript"></script>
+  <!--
+=======================================================================
+$Id: stylesheet.asp,v 1.8 2005/05/16 19:43:01 cadya Exp $
+
++- - - +   Copyright 2002 - 2004, PB Farradyne
+| PBF  |                   All Rights Reserved
++- - - +- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+This file is property of PB Farradyne Inc.  Any unauthorized use or
+duplication of this file, or removal of the header, constitutes
+theft of intellectual property.
+
+This file is included in the header of each page.  It links to an
+appropriate stylesheet based on the user's web browser.
+=======================================================================
+-->
+
+<!-- Global stylesheet -->
+<link rel="stylesheet" href="http://traffic.511.org/include/stylesheet.css">
+<script language="JavaScript">
+<!--
+// Write out Netscape specific stylesheet
+if(navigator.appName == "Netscape" && navigator.appVersion < "5") {
+  document.write('<link rel="stylesheet" href="http://traffic.511.org/include/stylesheet_ns.css">');
+}
+else { // Write out default stylesheet
+  document.write('<link rel="stylesheet" href="http://traffic.511.org/include/stylesheet_ie.css">');
+}
+//-->
+</script>
+
+</head>
+
+<body bgcolor="#FFFFFF" leftmargin="0" topmargin="2" marginwidth="0" marginheight="2">
+
+<script language="JavaScript1.2" src="http://traffic.511.org/include/HM_Loader.js" type='text/javascript'></script>
+<script language="JavaScript1.3" src="popup.js" type='text/javascript'></script>
+<table border="0" cellspacing="0" cellpadding="0" width="750">
+  <tr>
+    <td width="80"><a tabindex="2" href="http://www.511.org/"><img src="http://traffic.511.org/images/tmp_511_logo.gif" width="80" height="81" alt="511.org : Your Bay Area travel guide" border="0"></a></td>
+
+    <td valign="top">
+      <table border="0" cellspacing="0" cellpadding="0" bgcolor="#336633" width="100%">
+        <tr>
+          <td width="199"><a tabindex="3" href="http://traffic.511.org/"><img src="http://traffic.511.org/images/tmp_title.gif" width="177" height="56" alt="Traffic" border="0"></a></td>
+          <td class="ltbrown" valign="top">
+            <a href="#localnav" class="skip" tabindex="1">Skip global navigation.</a>
+            <a href="#content" class="skip" tabindex="1">Skip to main content</a></td>
+          <td width="140"><div align="right"><img src="http://traffic.511.org/images/tmp_a_to_b.jpg" width="138" height="56" alt=""></div></td>
+
+        </tr>
+      </table>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#519451">
+        <tr>
+          <td width="3%" valign="top"><img src="http://traffic.511.org/images/tmp_global_curve.gif" width="15" height="24" alt=""></td>
+          <td class="biege"><div align="right"><a href="http://traffic.511.org/" class="global" tabindex="4">511 Traffic Home</a> | <a href="http://www.511.org/" onMouseOut="HM_f_PopDown('elMenu1')" onMouseOver="HM_f_PopUp('elMenu1',event)" class="global" tabindex="5">511.org Home <img src="http://traffic.511.org/images/arrow_global.gif" width="14" height="15" alt="" border="0"></a></div>
+          </td>
+
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<table width="750" border="0" cellspacing="0" bgcolor="#FFFFCC">
+  <tr><td height="5"><img src="/images/pixel_invisible.gif" width="1" height="1" alt=""></td></tr>
+</table>
+<table width="750" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+
+    <td width="160" height="349" valign="top" bgcolor="#FFFFCC">
+<table width="160" border="0" cellspacing="1" cellpadding="2" bgcolor="#FFFFFF">
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="traffic_map.asp" class="white" onClick="return openMap();">Traffic and Driving Times Map</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="traffic_text.asp" class="white">511 Driving Times<SMALL><SUP>SM</SUP></SMALL> (text version)</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="traffic_text_all.asp" class="white">Traffic Information (text version)</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="alerts.asp" class="white">Breaking News &amp; Updates</a></td></tr>
+
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="http://www.bayareafastrak.org/" class="white" target="_blank">FasTrak&#153;</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="coverage.asp" class="white">511 Driving Times<SMALL><SUP>SM</SUP></SMALL> Coverage</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="http://www.baybridgeinfo.org/" class="white" target="_blank">Bay Bridge Seismic Retrofit Project</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="traffic_links.asp" class="white">Local Traffic Information</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="traffic_partners.asp" class="white">Traffic Partners</a></td></tr>
+
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="http://www.my511.org/" class="white">MY 511<SMALL><SUP>SM</SUP></SMALL> (<i>test site</i>)</a></td></tr>
+  <tr><td bgcolor="#336633" onMouseOver="bgColor='#519451'" onMouseOut="bgColor='#336633'"><a href="#content" class="white" tabindex="10" name="localnav">Skip Navigation</a></td></tr>
+</table>
+<table width="159" border="0" cellspacing="0" cellpadding="3" bgcolor="#FFFFCC" >
+  <tr>
+    <td valign="top" class="textsm">
+
+      <div align="left">
+        <p><a href="skip_nav.asp">What is &quot;skip navigation&quot;?</a><br><br></p>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top" class="textsm">
+
+      <div align="center"><label for="search_phrase">SEARCH TRAFFIC:</label></div>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top" class="textsm">
+      <form name="SearchForm" method="post" action="http://traffic.511.org/search.asp">
+        <div align="center">
+          <input type="text" id="search_phrase" name="search_phrase" size="15" tabindex=1 maxlength="30" class="textsm">
+
+          <input type="submit" value="GO" class="gobutton" tabindex=2>
+        </div>
+      </form>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top" class="textsm">
+      <div align="center">
+        <a href="about.asp">About 511 Traffic</a><br>
+
+        <a href="suggestions.asp">Suggestions</a> | <a href="email_friend.asp">Tell a Friend</a><br>
+        <a href="site_map.asp">Traffic Site Directory</a><br>
+        <a href="faq.asp">FAQ</a> | <a href="suggestions.asp">Contact Us</a>
+      </div>
+
+    </td>
+  </tr>
+</table>
+</td>
+    <td valign="top" id="content">
+    <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <tr>
+        <td valign="top"><a name="content"></a><b>Traffic Information (text version)</b></td>
+        <td valign="top" align="right" class="textsm">
+
+            (<A HREF="traffic_text_all.asp?refresh=-1">no refresh</A>)
+            Refresh every
+            <B>5</B> <A HREF="traffic_text_all.asp?refresh=240">4</A> <A HREF="traffic_text_all.asp?refresh=180">3</A> <A HREF="traffic_text_all.asp?refresh=120">2</A>
+            minutes
+            <BR>
+            <script type="text/javascript" src="timestamp.js"></script>
+
+        </td>
+      </tr>
+    </table>
+
+
+<table align="right" width="220" border="0" cellspacing="0" cellpadding="5"><tr><td class="" bgcolor="#EEEEEE">
+
+<p align="left"><b>Related Information:</b></p>
+
+<p>
+<a href="traffic_text_all.asp"><b>traffic info summary</b></a>
+<br><a href="traffic_text_incidents.asp">incidents</a>
+
+| <a href="traffic_text_events.asp">events</a>
+| <a href="traffic_text_construction.asp">construction</a>
+| <a href="traffic_text_cameras.asp">cameras</a>
+</p>
+
+</td></tr></table>
+
+
+    <p class="textsm">Need help with this feature?  Visit the 511 Traffic Site’s <a href="faq.asp#f44">User Guide/FAQ</a>.</p>
+
+    <p><b>Current traffic information summary:</b></p>
+
+        <p class="textsm">(Click header to sort table.)</p>
+        <table summary="Traffic incident listing" class="text-data sortable" id="data1">
+        <tr>
+          <th scope="col">Type</th>
+          <th scope="col">Route</th>
+          <th scope="col">Start time</th>
+
+          <th scope="col" abbr="Duration">Estimated duration:</th>
+          <th scope="col">Description</th>
+        </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_incidents.gif" alt="Incident" title="Incident"></td>
+              <td>I-580 W</td>
+              <td>7/4/06 10:26&nbsp;pm</td>
+
+              <td>30 <abbr title="minutes">min.</a></td>
+              <td>CHP : Accident on I-580 W Westbound after Strobridge Ave (Castro Valley) Right shoulder blocked Expect delays
+                <p class="more-info"><a href="traffic_text_incident_detail.asp?id=2006070422264501002">More info on accident on I-580 W</a></p></td>
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_incidents.gif" alt="Incident" title="Incident"></td>
+              <td>CA-13 N</td>
+
+              <td>7/4/06 10:16&nbsp;pm</td>
+              <td>30 <abbr title="minutes">min.</a></td>
+              <td>CHP : Accident on CA-13 N Northbound after Redwood Rd (Oakland)  Expect delays
+                <p class="more-info"><a href="traffic_text_incident_detail.asp?id=2006070422162001002">More info on accident on CA-13 N</a></p></td>
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+
+              <td>US-101 N</td>
+              <td>7/4/06 8:58&nbsp;pm</td>
+              <td>60 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on US-101 N Northbound exiting at Woodside Rd (Redwood City) Off Ramp closed until further notice
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070420583801002">More info on emergency-road-closure, major-event</a></p></td>
+            </tr>
+
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-880 N</td>
+              <td>7/4/06 7:23&nbsp;pm</td>
+              <td>120 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-880 N Northbound exiting at Broadway (Oakland) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070419233001002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-80 W</td>
+              <td>7/4/06 7:53&nbsp;pm</td>
+              <td>140 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-80 W Westbound exiting at Gilman St (Berkeley) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070419535001002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-80 E</td>
+              <td>7/4/06 7:52&nbsp;pm</td>
+              <td>240 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-80 E Eastbound exiting at University Ave (Berkeley) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070419520901002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-80 W</td>
+              <td>7/4/06 7:50&nbsp;pm</td>
+              <td>240 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-80 W Westbound exiting at University Ave (Berkeley) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070419501701002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>US-101 S</td>
+              <td>7/4/06 9:42&nbsp;pm</td>
+              <td>240 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on US-101 S Southbound before CA-1 S (San Francisco) Off Ramp closed until 11 PM
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070421420501002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-280 N</td>
+              <td>7/4/06 9:30&nbsp;pm</td>
+              <td>480 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-280 N Northbound exiting at Guadalupe Pky (San Jose) Various lanes closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070421302201002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-280 S</td>
+              <td>7/4/06 9:32&nbsp;pm</td>
+              <td>480 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-280 S Southbound exiting at Guadalupe Pky (San Jose) Various lanes closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070421321701002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>CA-87</td>
+              <td>7/4/06 9:22&nbsp;pm</td>
+              <td>480 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on CA-87 Southbound between Park Ave (San Jose) and Curtner Ave (San Jose) All lanes closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070421222901002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>CA-87</td>
+              <td>7/4/06 9:20&nbsp;pm</td>
+              <td>480 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on CA-87 Northbound between Curtner Ave (San Jose) and Park Ave (San Jose) All lanes closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070421204601002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>CA-12</td>
+              <td>7/4/06 9:18&nbsp;pm</td>
+              <td>480 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on CA-12 Eastbound past Webster St (Fairfield) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070421184301002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>CA-12</td>
+              <td>7/4/06 8:51&nbsp;pm</td>
+              <td>120 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on CA-12 Westbound before Webster St (Fairfield) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070420514701002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>I-980 W</td>
+              <td>7/4/06 7:44&nbsp;pm</td>
+              <td>180 min.</td>
+              <td scope="row">Caltrans : Emergency road closure & Special event on I-980 W Westbound before I-880 S (Oakland) Off Ramp closed until midnight
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070419441901002">More info on emergency-road-closure, major-event</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>Shoreline Amphitheater</td>
+              <td>7/4/06 3:42&nbsp;pm</td>
+              <td>420 min.</td>
+              <td scope="row">TIC : Special event - Concert on Shoreline Amphitheater (Mountain View)  Expect delays
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070415422601002">More info on concert</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>Van Ness Ave</td>
+              <td>7/4/06 10:44&nbsp;am</td>
+              <td>652 min.</td>
+              <td scope="row">TIC : Special event - Concert on Van Ness Ave Northbound at North Point St (San Francisco)  until 11 PM
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070410445701002">More info on concert</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>CA-12</td>
+              <td>7/4/06 8:42&nbsp;am</td>
+              <td>704 min.</td>
+              <td scope="row">TIC : Special event - Parade on CA-12 Westbound at E Napa St (Sonoma)  until 10-30 PM
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070408421001002">More info on parade</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>CA-87</td>
+              <td>7/4/06 10:41&nbsp;am</td>
+              <td>740 min.</td>
+              <td scope="row">TIC : Special event - Fireworks on CA-87 Northbound at Park Ave (San Jose)  until 11 PM
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070410413401002">More info on fireworks-display</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>Napa County Fairgrounds</td>
+              <td>7/4/06 10:42&nbsp;am</td>
+              <td>720 min.</td>
+              <td scope="row">TIC : Special event - Fair on Napa County Fairgrounds (Calistoga)  until 11 PM
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070410421901002">More info on fair</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_events.gif" alt="Event" title="Event"></td>
+              <td>Marin County Fairgrounds</td>
+              <td>7/4/06 9:42&nbsp;am</td>
+              <td>780 min.</td>
+              <td scope="row">TIC : Special event - Fair on Marin County Fairgrounds (San Rafael)  until 11 PM
+                <p class="more-info"><a href="traffic_text_event_detail.asp?id=2006070409422801002">More info on fair</a></p></td>
+
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_construction.gif" alt="Construction" title="Construction"></td>
+              <td>CA-1 S</td>
+              <td>5/30/06 7:19&nbsp;am</td>
+              <td>60 <abbr title="minutes">min.</a></td>
+
+              <td>Caltrans : Construction - Longterm construction on CA-1 S Southbound before Linda Mar Blvd (Pacifica) All lanes remain closed until further notice
+                <p class="more-info"><a href="traffic_text_construction_detail.asp?id=2006053007193101002">More info on long-term-road-construction on CA-1 S</a></p></td>
+            </tr>
+
+            <tr>
+              <td scope="row"><img src="images/icon_construction.gif" alt="Construction" title="Construction"></td>
+              <td>CA-1 N</td>
+              <td>5/2/06 7:29&nbsp;am</td>
+
+              <td>60 <abbr title="minutes">min.</a></td>
+              <td>Caltrans : Construction - Longterm construction on CA-1 N Northbound before Linda Mar Blvd (Pacifica) All lanes remain closed until further notice
+                <p class="more-info"><a href="traffic_text_construction_detail.asp?id=2006050207292701002">More info on long-term-road-construction on CA-1 N</a></p></td>
+            </tr>
+
+        </table>
+
+    </td>
+  </tr>
+</table>
+
+
+<table width="750" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="160" bgcolor="#FFFFCC" valign="bottom">
+      <table width="160" border="0" cellspacing="1" cellpadding="2" bgcolor="#FFFFCC">
+        <tr>
+          <td valign="top" class="copyright">
+            <div align="center">Brought to you by <a href="http://www.mtc.ca.gov/" target="_blank">MTC</a> and <a href="http://www.mtc.ca.gov/about_mtc/partner.htm" target="_blank">Bay Area Transportation Partners</a>
+
+              <p><a href="privacy.asp">Privacy</a> | <a href="accessibility.asp">Accessibility</a><br>
+              <br>&copy;2006 Metropolitan Transportation Commission</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+    </td>
+    <td valign="bottom" width="590">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+        <tr>
+          <td class="textsm">
+
+            <div align="center">
+            ~~
+            <br><br>
+            <a href="traffic_map.asp" onClick="return openMap();">Traffic and Driving Times Map</a>
+
+             | <a href="traffic_text.asp">511 Driving Times<SMALL><SUP>SM</SUP></SMALL> (text version)</a>
+            <br>
+            <a href="traffic_text_all.asp">Traffic Information (text version)</a>
+             | <a href="alerts.asp">Breaking News &amp; Updates</a>
+
+             | <a href="http://www.bayareafastrak.org/" target="_blank">FasTrak&#153;</a>
+            <br>
+            <a href="coverage.asp">511 Driving Times<SMALL><SUP>SM</SUP></SMALL> Coverage</a>
+             | <a href="http://www.baybridgeinfo.org/" target="_blank">Bay Bridge Seismic Retrofit Project</a>
+            <br>
+
+            <a href="traffic_links.asp">Local Traffic Information</a>
+             | <a href="traffic_partners.asp">Traffic Partners</a>
+            <br>
+            <br>
+            ~~
+            <br>
+            <br>
+            <a href="http://www.511.org/">511.org Home</a>
+
+             | <a href="default.asp">Traffic</a>
+             | <a href="http://transit.511.org/">Transit</a>
+             | <a href="http://rideshare.511.org/">Rideshare</a>
+             | <a href="http://bicycling.511.org/">Bicycling</a>
+            </div>
+
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+
+</body>
+</html>

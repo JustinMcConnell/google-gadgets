@@ -1,0 +1,1313 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://boolean.googlepages.com/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "Bay Area Traffic"
+  title_url           = "http://traffic.511.org/"
+  description         = "This gadget displays traffic information for the San Francisco Bay Area.  It shows traffic accidents, road construction and other nasty stuff reported by the CHP and Caltrans.  All information is obtained from 511.org."
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_location     = "San Francisco, CA"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_link         = "http://www.talisweb.com/justin/"
+  author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+  author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+  author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+  screenshot          = "http://boolean.googlepages.com/511_screenshot.png"
+  thumbnail           = "http://boolean.googlepages.com/511_thumbnail.png"
+  scaling             = "true"
+  scrolling           = "true"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+  <Require feature="setprefs" />
+  <Require feature="dynamic-height" />
+  <Require feature="minimessage" />
+  <Require feature="analytics" />
+</ModulePrefs>
+
+<UserPref name="title"   display_name="Title"  default_value="Bay Area Traffic" />
+<UserPref name="height"  display_name="Height" default_value="0" datatype="enum">
+  <EnumValue value="0"   display_value="Auto" />
+  <EnumValue value="50"  display_value="50"   />
+  <EnumValue value="100" display_value="100"  />
+  <EnumValue value="150" display_value="150"  />
+  <EnumValue value="200" display_value="200"  />
+  <EnumValue value="250" display_value="250"  />
+  <EnumValue value="300" display_value="300"  />
+  <EnumValue value="350" display_value="350"  />
+  <EnumValue value="400" display_value="400"  />
+</UserPref>
+<UserPref name="fontsize" display_name="Font Size" default_value="75%" datatype="enum">
+  <EnumValue value="60%"  display_value="Smaller" />
+  <EnumValue value="67%"  display_value="Small"   />
+  <EnumValue value="75%"  display_value="Medium"  />
+  <EnumValue value="90%"  display_value="Large"   />
+  <EnumValue value="105%" display_value="Larger"  />
+</UserPref>
+
+<UserPref name="sort"        default_value="" datatype="hidden" />
+<UserPref name="narrow_text" default_value="" datatype="hidden" />
+<UserPref name="narrow_list" default_value="" datatype="hidden" />
+
+<Content type="html">
+<![CDATA[
+
+<script src="http://boolean.googlepages.com/511_date.js" type="text/javascript"></script>
+<script src="http://www.talisweb.com/justin/gmodules/511/ping.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+// Hello to the Googlers reading this gadget.  I hope you find my code easy on the eyes.
+
+
+// names of the hidden user preferences
+var key_sort  = "sort";
+var key_filtt = "narrow_text";
+var key_filtl = "narrow_list";
+
+// base URLs for "further detail" links and image links
+var base_511  = "http://traffic.511.org/";
+var base_img  = "http://boolean.googlepages.com/";
+
+// get user prefs from here
+var prefs;
+
+// the list of incidents
+var list;
+
+// ping
+_IG_Analytics("UA-51692-4", "/traffic");
+
+// mini message notifying users of new gadget changes
+var mini;
+var message;
+
+
+// Go go gadget main function!
+_IG_RegisterOnloadHandler(main);
+
+
+
+function main() {
+  prefs = new _IG_Prefs(__MODULE_ID__);
+
+  mini = new _IG_MiniMessage(__MODULE_ID__);
+  message = mini.createDismissibleMessage(_gel("notice"));
+  message.style.background = "#CCE5FF";
+  message.style.color      = "#000000";
+  message.style.fontSize   = ".9em";
+
+  // 3 divs for the incident list, the UI controls and the box that contains them
+  var divData = "data";
+  var divGUI  = "gui";
+  var divBox  = "container";
+
+  // make Google refresh the cache every x minutes, x being the last number on the next line
+  var buster = Math.floor((new Date()).getTime() / 1000 / 60 / 5);
+
+  // load and scrape HTML from this URL
+  var url = base_511 + "traffic_text_all.asp?" + buster;
+
+
+  _IG_FetchContent(url, function(html) {
+
+    // render a loading screen while loading
+    list = new IncidentList(divData, divGUI, divBox);
+    list.render("loading");
+
+    // get rid of all text outside the table that contains the data we want
+    var pos1 = html.indexOf('<table summary="Traffic incident listing" class="text-data sortable" id="data1">');
+    var pos2 = html.indexOf("</table>", pos1);
+
+    if(pos1 > -1 && pos2 > -1) {
+      // chop off the table tag
+      html = html.substring(pos1+81, pos2);
+
+      // replace long descriptions with shorter ones
+      html = html.replace("Estimated duration:", "Duration");
+      html = html.replace("Start time", "Start");
+      // add a pipe to the end of the descriptions so the split further down works
+      html = html.replace("Description", "Description|");
+
+      // replace carrots with char codes so we don't parse out images later on
+      html = html.replace(/<(img.*?)>/g, "&lt;$1&gt;");
+      // replace relative image paths with absolute ones
+      html = html.replace(/images(\/)/g, base_img+"$1");
+      // deliminate fields with |
+      html = html.replace(/<a href="(traffic_text_\w*?_detail\.asp\?id=\w*?)">/g, "|$1|");
+      html = html.replace(/<\/td>/g, "|");
+
+      // get rid of all html tags
+      html = html.replace(/<.*?>/g, "");
+      // get rid of whitespace
+      html = html.replace(/\s{2,}/g, " ");
+      // quick formatting for description field
+      html = html.replace(/\s\:\s/g, ": ");
+      // trim whitespace and extra | from end of the string
+      html = html.replace(/\|\s+$/, "");
+      html = html.replace(/More info on /g, "");
+      html = _trim(html);
+
+      // a flat array that contains 7 slots for every incident
+      var parts;
+      if(html.substring(0, "type route start duration description".length).toLowerCase() ==
+         "type route start duration description".toLowerCase()) {
+        parts = html.split("|");
+      }
+      else {
+        parts = [];
+      }
+
+      if(parts.length >= 8) {
+        parts.shift();
+        for(var i=0; i<parts.length; i+=7) {
+          // parse the start datetime of the incident
+          var startDate = new Date(0);
+
+          // expects "2/10/07 4:24&nbsp;p.m."
+          var re = /([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{1,2})\s([0-9]{1,2}):([0-9]{1,2})\&nbsp;(p\.m\.|a\.m\.)/;
+          var backrefs = re.exec(parts[i+2].trim());
+          if(backrefs) {
+            var startYear  = parseInt("20"+backrefs[3]) || 0;
+            var startMonth = parseInt(backrefs[1]-1)    || 0;
+            var startDate  = parseInt(backrefs[2])      || 0;
+            var startHour  = parseInt(backrefs[4])      || 0;
+            var startMin   = parseInt(backrefs[5])      || 0;
+
+            // next two if blocks are military time adjustments
+            if(backrefs[6].toLowerCase() == "p.m." && startHour != 12)
+              startHour += 12;
+            if((backrefs[6].toLowerCase() == "a.m." && startHour == 12) || startHour == 24)
+              startHour = 0;
+
+            if(startYear > 0)
+              startDate = new Date(startYear, startMonth, startDate, startHour, startMin);
+            else
+              startDate = new Date(0); // start of epoch for error condition
+          }
+
+          // add the incident to the list
+          list.add(new Incident(parts[i],
+                                parts[i+1],
+                                startDate,
+                                parts[i+3],
+                                parts[i+4],
+                                parts[i+5],
+                                parts[i+6]));
+        }
+      }
+    }
+
+    // set default sort and filter
+    list.sort(prefs.getString(key_sort) || "when");
+    list.setFilterList(prefs.getString(key_filtl) || "hide");
+    list.setFilterText(prefs.getString(key_filtt) || "");
+    list.filter(list.getFilterText(),
+                list.getFilterList());
+
+    // render to the screen
+    list.render();
+
+    // expand gadget height to content height
+    if(this.bestFitOn)
+      _IG_AdjustIFrameHeight();
+
+  });
+}
+
+/**
+ * Stores the list of traffic incidents and its state, and is becoming the bloated brain class.
+ */
+function IncidentList() {
+  this.incidents  = [];
+  this.sortKey    = "";
+  this.filterText = "";
+  this.filterList = "";
+  this.lastScreen = "";
+  this.divData    = arguments[0];
+  this.divGUI     = arguments[1];
+  this.divBox     = arguments[2];
+  this.bestFitOn  = prefs.getString("bestfit").toLowerCase() == "yes";
+}
+
+/**
+ * Add an incident object to the list
+ */
+IncidentList.prototype.add = function(incident) {
+  if(typeof incident != "object")
+    return false;
+  this.incidents.push(incident);
+}
+
+/**
+ * Get an incident object based on its 511.org incident id
+ */
+IncidentList.prototype.get = function(incident_id) {
+  for(var i=0; i<this.incidents.length; i++) {
+    if(this.incidents[i].id == incident_id)
+      return this.incidents[i];
+  }
+  return false;
+}
+
+/**
+ * Get the number of incidents in the list.
+ */
+IncidentList.prototype.length = function() {
+  if(typeof this.incidents == "object")
+    return this.incidents.length;
+  return 0;
+}
+
+
+/**
+ * Get/Set the key on which the list orders the incidents.
+ */
+IncidentList.prototype.getSortKey = function() {
+  return this.sortKey || "";
+}
+IncidentList.prototype.setSortKey = function(str) {
+  if(!str || typeof str != "string") {
+    return false;
+  }
+
+  this.sortKey = str;
+  return true;
+}
+
+
+/**
+ * Get/Set the show/hide flag for filtering the incidents.
+ */
+IncidentList.prototype.getFilterList = function() {
+  return this.filterList || "";
+}
+IncidentList.prototype.setFilterList = function(str) {
+  if(!str || typeof str != "string")
+    return false;
+
+  this.filterList = str;
+  return true;
+}
+
+/**
+ * Get/Set the text to filter the incidents with.
+ */
+IncidentList.prototype.getFilterText = function() {
+  return this.filterText || "";
+}
+IncidentList.prototype.setFilterText = function(str) {
+  if(typeof str != "string")
+    return false;
+
+  this.filterText = str;
+  return true;
+}
+
+/**
+ * Wraps some caching around _IG_Prefs.set()
+ */
+IncidentList.prototype.save = function() {
+  var key    = arguments[0];
+  var val    = arguments[1];
+  // try to automatically grab the key value if it isn't specified in the paramters
+  if(!val) {
+    if(key == key_sort && this.sortKey)
+      val = this.sortKey;
+    else if(key == key_filtl && this.filterList)
+      val = this.filterList;
+    else if(key == key_filtt && (this.filterText || this.filterText==""))
+      val = this.filterText;
+  }
+
+  // only save if the value has changed
+  var oldVal = prefs.getString(key);
+  if(key && val != oldVal) {
+    prefs.set(key, val);
+    return true;
+  }
+
+  return false;
+}
+
+
+/**
+ * Show or hide incidents based on the text the user typed.
+ */
+IncidentList.prototype.filter = function(str, flag) {
+  // the comma delimited list of words to filter on
+  var rhsides = str.toLowerCase().replace(", ", ",").split(",");
+  var rhs, lhs;
+
+  // for each incident compare it with each word the user typed
+  // to see if it should be shown or hidden.
+  for(var i=0; i<this.incidents.length; i++) {
+    for(var j=0; j<rhsides.length; j++) {
+      rhs = rhsides[j].trim();
+      if(!rhs && j>0)
+        continue;
+
+      lhs = this.incidents[i].route.toLowerCase();
+      if(str == "") {
+        this.incidents[i].displayAll = "block";
+        j=rhsides.length;
+      }
+      else if(lhs.indexOf(rhs) != -1 && flag == "show") {
+        this.incidents[i].displayAll = "block";
+        j=rhsides.length;
+      }
+      else if(lhs.indexOf(rhs) != -1) {
+        this.incidents[i].displayAll = "none";
+        j=rhsides.length;
+      }
+      else if(lhs.indexOf(rhs) == -1 && flag == "show")
+        this.incidents[i].displayAll = "none";
+      else
+        this.incidents[i].displayAll = "block";
+    }
+  }
+
+  this.setFilterText(str);
+  this.setFilterList(flag);
+
+
+  if(typeof arguments[2] == "function")
+    arguments[2]();
+}
+
+/**
+ * Sort the list of incidents
+ */
+IncidentList.prototype.sort = function() {
+  if(arguments[0])
+    this.setSortKey(arguments[0]);
+  var key = this.getSortKey();
+  var lhs1, lhs2, rhs1, rhs2;
+
+  this.incidents.sort(function(a, b) {
+    // time sorts by time
+    if(key == "when") {
+      lhs1 = b.getDateObj();
+      rhs1 = a.getDateObj();
+      lhs2 = a["route"];
+      rhs2 = b["route"];
+    }
+    // type sorts by incident type then location
+    else if(key == "type") {
+      lhs1 = b["type"]; // sort backwards
+      rhs1 = a["type"];
+      lhs2 = a["route"];
+      rhs2 = b["route"];
+    }
+    // location sorts by location then time
+    else if(key == "where") {
+      lhs1 = a["route"]; //highwayName(a["route"]);
+      rhs1 = b["route"]; //highwayName(b["route"]);
+      lhs2 = b.getDateObj();
+      rhs2 = a.getDateObj();
+    }
+    // title sorts by title then location
+    else if(key == "title") {
+      lhs1 = a["title"];
+      rhs1 = b["title"];
+      lhs2 = a["route"];
+      rhs2 = b["route"];
+    }
+
+    if(lhs1 > rhs1) {
+      return 1;
+    }
+    else if(lhs1 < rhs1) {
+      return -1;
+    }
+    else {
+      if(lhs2 > rhs2)
+        return 1;
+      else if(lhs2 < rhs2)
+        return -1;
+      else
+        return 0;
+    }
+  });
+
+  if(typeof arguments[1] == "function") {
+    arguments[1]();
+  }
+}
+
+/**
+ * Render the top controls and the traffic list.
+ */
+IncidentList.prototype.render = function() {
+  var page = arguments[0] || "";
+  this.renderGUI();
+  this.renderData(page);
+}
+
+/**
+ * Render the top controls.
+ */
+IncidentList.prototype.renderGUI = function() {
+  var page    = arguments[0] || "";
+  var html    = "";
+  var divName = this.divGUI;
+  if(!_gel(divName))
+    return;
+
+  // if the user is at the help page, just draw the help link
+  if(page == "help") {
+    html = ""+
+      "    <table border='0' cellspacing='0' id='d_header'><tbody><tr>"+
+      "    <td id='d_sort' class='enabled'>&nbsp;"+
+      "    </td>"+
+      "    <td id='d_narrow' class='enabled'>&nbsp;"+
+      "    </td>"+
+      "    <td id='d_help' class='active'>"+
+      "      <a href='' onclick='list.toggleHelp(); return false;' title='Return to traffic information'><img src='"+base_img+"511_help.gif' class='icon' /> Help</a>"+
+      "    </td>"+
+      "    </tr></tbody></table>";
+  }
+  // if the user is at the traffic list, draw all links
+  else {
+    html = ""+
+      "    <table border='0' cellspacing='0' id='d_header'><tbody><tr>"+
+      "    <td id='d_sort' class='enabled'>"+
+      "      <a href='' onclick='menuClick(\"d_sort\", \"d_sort_edit\"); return false;' title='Sort the list of items'><img src='"+base_img+"511_sort.gif' class='icon' /> Sort</a>"+
+      "    </td>"+
+      "    <td id='d_narrow' class='enabled'>"+
+      "      <a href='' onclick='menuClick(\"d_narrow\", \"d_narrow_edit\"); return false;' title='Narrow the list of items'><img src='"+base_img+"511_narrow.gif' class='icon' /> Narrow</a>"+
+      "    </td>"+
+      "    <td id='d_help' class='enabled'>"+
+      "      <a href='' onclick='list.toggleHelp(); return false;' title='Get help for this gadget.'><img src='"+base_img+"511_help.gif' class='icon' /> Help</a>"+
+      "    </td>"+
+      "    </tr></tbody></table>";
+  }
+
+  // sort and narrow controls
+  html += ""+
+    "    <div id='d_sort_edit'>"+
+    "    Sort items by their <select onchange='if(this.selectedIndex>=0) {list.sort.call(list, this.options[this.selectedIndex].value, function() {list.renderData()});}' onblur='list.save(key_sort);' title=''>"+
+    "        <option value='type' title='Sort by item type, then by location.' "+(this.getSortKey()=="type" ? "selected='selected'" : "")+">type</option>"+
+    "        <!--<option value='title' title='Sort by item title, then by location.' "+(this.getSortKey()=="title" ? "selected='selected'" : "")+">title</option>-->"+
+    "        <option value='where' title='Sort by item location, then by time.' "+(this.getSortKey()=="where" ? "selected='selected'" : "")+">location</option>"+
+    "        <option value='when' title='Sort by item time.' "+(this.getSortKey()=="when" ? "selected='selected'" : "")+">time</option>"+
+    "      </select>"+
+    "    </div>"+
+
+    "    <div id='d_narrow_edit'>"+
+    "    <form>"+
+    "    <select id='d_narrow_sel' onchange='list.filter.call(list, this.form.d_narrow_txt.value, this.options[this.selectedIndex].value, function(){list.renderData()});' onblur='list.save(key_filtl);'>"+
+    "      <option value='hide' "+(this.getFilterList()=="hide" ? "selected='selected'" : "")+">Hide</option>"+
+    "      <option value='show' "+(this.getFilterList()=="show" ? "selected='selected'" : "")+">Show</option>"+
+    "    </select>"+
+    "    items that happened at "+
+    "    <img src='"+base_img+"511_arrow_tdr.gif' class='icon' /><br />"+
+    "    <input type='text' onkeyup='list.filter.call(list, this.value, this.form.d_narrow_sel.options[this.form.d_narrow_sel.selectedIndex].value, function() {list.renderData()});' onblur='list.save(key_filtt);' id='d_narrow_txt' value='"+this.getFilterText()+"' title='US-101 S or 101, Candlestick Park, etc.' /><br /><span class='example'>(US-101 S or 101, Candlestick Park, etc.)</span>"+
+    "    </form>"+
+    "    </div>";
+
+  _gel(divName).innerHTML = html;
+}
+
+/**
+ * Render the traffic list.
+ */
+IncidentList.prototype.renderData = function() {
+  var page    = arguments[0] || "";
+  var html    = "";
+  var divName = this.divData;
+  if(!_gel(divName))
+    return;
+
+  // loading page
+  if(page == "loading") {
+    html = '<img src="http://boolean.googlepages.com/511_loading.gif" class="icon" style="margin-top:3px;" /> Loading traffic information from 511.org</div>';
+  }
+
+  // show incidents
+  else {
+    for(var i=0; i<this.incidents.length; i++) {
+      var c_incident = this.incidents[i];
+      if(c_incident.displayAll == "none")
+        continue;
+
+      var c_style   = i>0 ? "" : "border-top:0;";
+      var c_icon    = c_incident.icon.replace("&lt;", "<")
+                                     .replace("&gt;", ">")
+                                     .replace("/icon_", "511_");
+      var c_class   = c_incident.displayInfo == "none" ? "i_top " : "i_top_on ";
+      var c_time    = c_incident.type.toLowerCase() != "construction" ?
+                      "    <td class='i_time'>" +c_incident.getTime()+ "</td>" :
+                      "";
+
+      var c_whenfor = "";
+      switch(c_incident.type.toLowerCase()) {
+        case "construction":
+          c_whenfor = "This construction began on " + c_incident.getDateObj().formatDate("l, F j") + ".";
+          break;
+        case "event":
+          c_whenfor = "This event will start at " +c_incident.getTime()+ " and should last about " +minutesToMinHours(c_incident.duration)+ ".";
+          break;
+        case "incident":
+          c_whenfor = "This incident was reported at " +c_incident.getTime()+ " and should last about " +minutesToMinHours(c_incident.duration)+ ".";
+          break;
+      }
+
+      var map_link = "";
+      if(c_incident.doMap)
+        map_link = ""+
+          "<a href='http://maps.google.com/maps?q="+encodeURI(c_incident.street+(c_incident.cross ? " and " +c_incident.cross : "")+", " +c_incident.city+ ", CA")+ "' target='_blank' title=\"Show a map of this item's location\">Map</a>";
+
+
+      html += ""+
+        "  <div class='i_item'>"+
+        "  <table class='"+c_class+"' id='i_top_"+c_incident.id+"' style='"+c_style+"' onclick='incidentClick(\""+c_incident.id+"\");' onmouseover='incidentOver(\""+c_incident.id+"\");' onmouseout='incidentOut(\""+c_incident.id+"\");' border='0' cellspacing='0' width='100%'><tbody><tr>"+
+        "    <td class='i_title'><span>" +c_incident.route+ "</span>"+
+             (c_incident.title ? ", " +c_incident.title : "")+
+        "    </td>"+
+        c_time+
+        "    <td class='i_icon'>" +c_icon+ "</td>"+
+        "  </tr></tbody></table>"+
+        "  <div class='i_bot' id='i_bot_"+c_incident.id+"' style='display:"+c_incident.displayInfo+";'>"+
+        "    <div class='i_desc'>" +c_incident.desc+ "</div>"+
+        "    <div class='i_whenfor'>"+c_whenfor+"</div>"+
+        "    <div class='i_link'>"+
+        "    "+(c_incident.doMap? map_link+" <span class='separator'>|</span>": "")+
+        "      <a href='"+base_511+c_incident.link+"' target='_blank' title='Show detailed information for this item'>More info</a>"+
+        "    </div>"+
+        "  </div>"+
+        "  </div>";
+    }
+
+    if(!html && this.length() == 0)
+      html = "<div class='error'>D'oh! It looks like 511.org might be down at the moment.  Try reloading in a minute or two.</div>";
+    else if(!html)
+      html = "<div class='error'>Oops! You narrowed the items down to nothing.  Try broadening your search a bit.</div>";
+  }
+
+  _gel(divName).innerHTML = html;
+
+  this.lastScreen = "incidents";
+}
+
+/**
+ * Render the help page.
+ */
+IncidentList.prototype.renderHelp = function() {
+  var source = _gel("help_html");
+  var target = _gel(this.divData);
+  if(!target)
+    return;
+  if(source) {
+    var html = source.innerHTML;
+    target.innerHTML = html;
+  }
+  this.lastScreen = "help";
+}
+
+/**
+ * Toggle between the help page and the traffic list.
+ */
+IncidentList.prototype.toggleHelp = function() {
+  if(this.lastScreen == "help")
+    this.render();
+  else {
+    this.renderGUI("help");
+    this.renderHelp();
+  }
+}
+
+/**
+ * Scroll the container div to a specific HTML Element or a pixel top.
+ * @param target - If target is a number, scroll to that pixel top.  If target
+ *   is a string, scroll to the pixel top of the HTML Element with that id.
+ */
+IncidentList.prototype.scroll = function(target) {
+  // Everyone except IE lines things up better when setting to offsetTop minus this amount.
+  // I suspect its IE running in quirks mode and not rendering with the W3C box model.
+  var fuzz = 20;
+
+  if(typeof target == "number") {
+    _gelstn("body")[0].scrollTop = target;
+  }
+  else if(typeof target == "string") {
+    if(!_gel(target))
+      return false;
+    _gelstn("body")[0].scrollTop = _gel(target).offsetTop - fuzz;
+  }
+}
+
+
+/**
+ * A single traffic incident.
+ */
+function Incident() {
+  this.icon        = arguments[0].trim() || "";
+  this.type        = (/title="([a-zA-z]*?)"/.exec(this.icon))[1];
+  this.route       = arguments[1].trim() || "";
+  this.start       = arguments[2]        || new Date(0);
+  this.duration    = arguments[3].trim() || "";
+  this.desc        = arguments[4].trim() || "";
+  this.link        = arguments[5].trim() || "";
+  this.id          = this.link.substring(this.link.indexOf("id=")+3);
+  this.title       = (arguments[6] || "").replace(/-/g, " ").toProperCase().trim();
+  this.title       = this.title.substring(0, this.title.indexOf("On")).trim();
+  this.displayInfo = "none";   // none or block
+  this.displayAll  = "block";  // none or block
+  this.street      = "";
+  this.cross       = "";
+  this.city        = "";
+  this.doMap       = false;
+
+  var matches = /^(.*):\s*(.*?)\s(on|before|after|to|entering at|exiting at|at|area of|past|approaching)\s(.*?)(\s(on|before|after|to|entering at|exiting at|at|area of|past|approaching)\s(.*?)\s*)?\((.*)\)\s*(.*)$/.exec(this.desc);
+  if(matches) {
+    if(matches[7])
+      this.street  = normAddress(matches[7]).trim();
+    if(matches[4])
+      this.cross   = normAddress(matches[4]).trim();
+    if(matches[8])
+      this.city    = matches[8].trim();
+    if(!this.street && this.cross) {
+      this.street = this.cross;
+      this.cross  = "";
+    }
+  }
+
+  if(this.street && this.city.toLowerCase() != "unincorporated")
+    this.doMap = true;
+}
+
+
+/**
+ * Return the incident's start time as a date object
+ */
+Incident.prototype.getDateObj = function() {
+  if(this.start)
+    return this.start;
+  return "";
+}
+
+
+/**
+ * Return the incident's start time in the format of hour:minute am/pm -> 2:09 pm
+ */
+Incident.prototype.getTime = function() {
+  if(this.start)
+    return this.start.formatDate("g:i a");
+  return "";
+}
+
+
+/**
+ * Do some stuff when the user fires mouseover on a traffic incident quick info
+ */
+function incidentOver(incident_id) {
+  var divBottom = _gel("i_bot_" + incident_id);
+  var divTop    = _gel("i_top_" + incident_id);
+  if(!divTop || !divBottom)
+    return false;
+
+  // change styles around so we're giving the user a cursor invitation
+  divTop.style.cursor = "pointer";
+  if(divBottom.style.display != "block") {
+    divTop.className = "i_top_over";
+  }
+}
+
+
+/**
+ * Do some stuff when the user fires mouseout on a traffic incident quick info
+ */
+function incidentOut(incident_id) {
+  var divBottom = _gel("i_bot_" + incident_id);
+  var divTop    = _gel("i_top_" + incident_id);
+  if(!divTop || !divBottom)
+    return false;
+
+  divTop.style.cursor = "default";
+  if(divBottom.style.display == "none") {
+    divTop.className = "i_top";
+  }
+}
+
+
+/**
+ * Show or hide extended details for a traffic incident.
+ * @param incident_id - 511.org incident id
+ */
+function incidentClick(incident_id) {
+  var incident  = list.get(incident_id);
+  var divBottom = _gel("i_bot_" + incident_id);
+  var divTop    = _gel("i_top_" + incident_id);
+  if(!incident || !divBottom || !divTop)
+    return false;
+
+  if(!divBottom.style.display || divBottom.style.display == "none") {
+    divTop.className        = "i_top_on";
+    incident.displayInfo    = "block";
+    divBottom.style.display = incident.displayInfo;
+  }
+  else {
+    divTop.className        = "i_top";
+    incident.displayInfo    = "none";
+    divBottom.style.display = incident.displayInfo;
+  }
+}
+
+
+/**
+ * Pretty print an integer number of minutes to minutes, hours, days, etc.
+ * 1   -> 1 minute
+ * 35  -> 35 minutes
+ * 125 -> 2 hours and 5 minutes
+ */
+function minutesToMinHours(minutes) {
+  var answer = minutes;
+  if(typeof minutes == "string")
+    minutes = parseInt(minutes);
+  if(isNaN(minutes) || typeof minutes != "number")
+    return answer;
+
+  if(minutes == 1)
+    answer = "1 minute";
+  else if(minutes < 60)
+    answer = minutes + " minutes";
+  else if(minutes == 60)
+    answer = "1 hour";
+  else if(minutes > 60 && minutes < 1440 && minutes % 60 == 0)
+    answer = Math.floor(minutes / 60) + " hours";
+  else if(minutes > 60 && minutes < 1440)
+    answer = Math.floor(minutes / 60) + " hours and " + (minutes % 60) + " minutes";
+  else if(minutes == 1440)
+    answer = "1 day";
+
+  return answer;
+}
+
+
+/**
+ * Strip the leading letters and dash from a highway name.
+ * I-280 -> 280
+ * CA-1 N -> 1 N
+ */
+function highwayName(str) {
+  if(matches = /(I|US|CA)-(.*)/.exec(str)) {
+    return matches[2];
+  }
+  return str;
+}
+
+
+/**
+ * Scrub highways names down to a common format.  This is here mainly for Google Maps to
+ * better recognize addresses in the form of "Street and Highway, City, State".
+ */
+function normAddress(addr) {
+  return addr.replace("N Northbound", "")
+             .replace("S Southbound", "")
+             .replace("W Westbound", "")
+             .replace("E Eastbound", "")
+             .replace("Northbound", "")
+             .replace("Southbound", "")
+             .replace("Westbound", "")
+             .replace("Eastbound", "");
+}
+
+
+
+/**
+ * Show or hide the sort or narrow menus
+ * @param elm - The HTMLElement that gets styled
+ * @param elm2 - The HTMLElement that gets shown or hidden
+ */
+function menuClick(elm, elm2) {
+  if(typeof elm != "object")
+    elm = _gel(elm);
+  if(typeof elm2 != "object")
+    elm2 = _gel(elm2);
+  if(!elm)
+    return false;
+
+  // toggle on
+  if(elm.className.indexOf("active") == -1) {
+    elm.className += " active";
+  }
+  // toggle off
+  else {
+    elm.className = elm.className.replace("active", "");
+  }
+
+  toggleDisplay(elm2);
+}
+
+
+/**
+ * Show or hide a HTMLElement
+ */
+function toggleDisplay(elm) {
+  if(typeof elm != "object")
+    elm = _gel(elm);
+  if(!elm)
+    return false;
+
+  if(!elm.style.display || elm.style.display == "none")
+    elm.style.display = "block";
+  else
+    elm.style.display = "none";
+}
+
+
+/**
+ * Add trim to the String
+ */
+String.prototype.trim = function() {
+  return this.replace(/^\s+|\s+$/, "");
+};
+
+
+/**
+ * http://www.codeproject.com/jscript/propercase.asp
+ */
+String.prototype.toProperCase = function() {
+  return this.toLowerCase().replace(/^(.)|\s(.)/g, function($1) { return $1.toUpperCase(); });
+}
+
+
+function _IFPC_AdjustIFrameHeight() {
+  var mid = _args()["mid"];
+  var h = ifpc_height;
+  var el = document.getElementById("remote_"+mid);
+  if (el) {
+    var sh = el.scrollHeight;
+    var oh = el.offsetHeight;
+    h = sh > oh ? sh : oh;
+    h += 5;
+  }
+
+  if(h > __UP_height__)
+    h = __UP_height__;
+
+  if (ifpc_height != h) {
+    _IFPC.call("remote_iframe_"+mid, "resize_iframe", ["remote_iframe_"+mid, h], "http://www.google.com/ig/ifpc_relay", null, "");
+    ifpc_height = h;
+  }
+}
+</script>
+
+
+<style type="text/css">
+a, a:visited {
+  color: inherit;
+}
+#notice {
+  padding: 2px;
+}
+
+#gui {
+  font-size: inherit;
+}
+#data {
+  clear: both;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: inherit;
+}
+#container {
+  font-size: __UP_fontsize__;
+  background: white;
+  color: black;
+}
+#container * {
+  font-size: inherit;
+}
+#container p {
+  font-size: inherit;
+  margin: 0;
+}
+#container h3 {
+  font-size: inherit;
+  border-bottom: 2px solid #e5ecf9;
+  padding: 2px;
+  margin-bottom: 3px;
+}
+#container a img {
+  border: 0;
+}
+#container form {
+  display: inline;
+}
+
+#container dl {
+}
+#container dt {
+  color: #1B4618;
+  font-weight: bold;
+}
+#container dd {
+  margin-left: 5px;
+  padding-left: 5px;
+}
+
+#d_header {
+  font-family: sans-serif;
+  font-size: inherit;
+  width: 100%;
+}
+#d_header div {
+  font-size: inherit;
+  font-family: sans-serif;
+  font-weight: bold;
+}
+#d_narrow_edit select, #d_narrow_edit input,
+#d_sort_edit select, #d_sort_edit input {
+  font-size: inherit;
+}
+
+#d_sort {
+  font-size: inherit;
+  text-align: left;
+  width: 33%;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_sort_edit {
+  display: none;
+  font-size: inherit;
+  background: #FFFFCC;
+  padding: 2px;
+  border-bottom: 2px solid #cdd3de;
+}
+
+#d_narrow {
+  font-size: inherit;
+  text-align: center;
+  width: 33%;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_narrow_edit {
+  display: none;
+  font-size: inherit;
+  background: #FFFFCC;
+  padding: 2px;
+  border-bottom: 2px solid #cdd3de;
+}
+#d_narrow_txt {
+  width: 100%;
+}
+
+#d_help {
+  font-size: inherit;
+  text-align: right;
+  width: 33%;
+  height: 20px;
+  padding: 2px;
+  background: #FFFFCC;
+  border-bottom: 2px solid #cdd3de;
+}
+
+#d_help li {
+  margin-bottom: 5px;
+  margin-left: 10px;
+  border: 1px solid green;
+}
+
+
+.i_item {
+  clear: both;
+  font-size: inherit;
+  width: 100%;
+}
+.i_top {
+  font-size: inherit;
+  border-top: 1px dotted #cdd3de;
+  border-bottom: 0;
+  background: transparent;
+}
+.i_top_over {
+  font-size: inherit;
+  border-top: 1px dotted #cdd3de;
+  border-bottom: 0;
+  background: #e5ecf9;
+}
+.i_top_on {
+  font-size: inherit;
+  border-top: 1px solid #cdd3de;
+  background: #e5ecf9;
+}
+.i_bot {
+  clear: both;
+  font-size: inherit;
+  padding: 2px;
+  padding-bottom: 5px;
+  background: url("http://boolean.googlepages.com/511_infobg.gif") repeat-x bottom;
+}
+.i_title {
+  font-size: inherit;
+  padding-left: 2px;
+  vertical-align: middle;
+}
+.i_title span {
+  font-weight: bold;
+}
+.i_time {
+  font-size: 95%;
+  font-weight: normal;
+  text-align: right;
+  color: #808080;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.i_icon {
+  width: 17px;
+  vertical-align: middle;
+}
+.i_whenfor {
+  font-size: inherit;
+  margin-top: 10px;
+}
+.i_desc {
+  font-size: inherit;
+}
+.i_link {
+  font-size: inherit;
+  text-align: right;
+  margin-top: 5px;
+}
+.i_link a {
+  font-size: inherit;
+  text-decoration: underline;
+  color: blue;
+}
+.i_top, .i_icon, .i_icon img, .i_title {
+  cursor: pointer;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+.disabled {
+  color: #FFFFCC;
+}
+.enabled {
+  font-weight: bold;
+}
+.enabled a {
+  color: black;
+  text-decoration: none;
+}
+.active {
+  font-weight: bold;
+}
+.active a {
+  color: #1B4618;
+  text-decoration: none;
+}
+.error {
+  font-size: inherit;
+}
+.example {
+  font-size: inherit;
+  font-style: italic;
+  color: #707070;
+}
+.separator {
+  color: #A0A0A0;
+}
+#container .tail {
+  margin-bottom: 13px;
+}
+
+
+ul.normlist {
+  list-style-type: circle;
+  padding-left: 15px;
+  margin-left: 15px;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+ul.normlist li {
+  font-size: inherit;
+}
+ul.normlist li img {
+  margin-right: 3px;
+}
+
+ul.barelist {
+  list-style-type: none;
+  padding-left: 0;
+  margin-left: 0;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+ul.barelist li {
+  font-size: inherit;
+}
+ul.barelist li img {
+  margin-right: 3px;
+}
+.myh3 {
+  font-size: inherit;
+  font-weight: bold;
+  border-bottom: 2px solid #e5ecf9;
+  padding: 2px;
+  margin-bottom: 3px;
+}
+
+.toplink {
+  text-align: right;
+  margin-bottom: 13px;
+}
+.toplink img {
+  align: middle;
+}
+.toplink a, .toplink a:active, .toplink a:visited {
+  font-variant: small-caps;
+  color: black;
+  text-decoration: none;
+}
+
+</style>
+
+<!--[if IE]>
+<style type="text/css" title="incidents">
+#container * {
+  font-size: 100%;
+}
+#container table, #container caption {
+  font-size: 100%;
+}
+#d_sort {
+  width: 33%;
+}
+#d_narrow {
+  width: 33%;
+}
+#d_help {
+  width: 33%;
+}
+</style>
+<![endif]-->
+
+<div id="container">
+  <div id="notice">This gadget was just updated. <a href="#" onclick="list.renderHelp(); mini.dismissMessage(message); setTimeout('list.scroll(\'h_old\')', 500); return false;">Read about it</a> here</div>
+  <div id="gui"><img src="http://boolean.googlepages.com/511_loading.gif" class="icon" style="margin-top:3px;" /> Loading traffic information from 511.org</div>
+  <div id="data"></div>
+</div>
+
+<div id="help_html" style="display:none;">
+  <div class="myh3" id="h_overview" style="margin-top:0;">Overview</div>
+  <p class="tail">This gadget displays traffic information for the San Francisco Bay Area.  It shows traffic accidents, road construction and other nasty stuff reported by the CHP and Caltrans.  All information is obtained from <a href="http://traffic.511.org/traffic_text_all.asp" target="_blank">511.org</a>.</p>
+
+  <div class="myh3" id="h_toc" style="margin-top:0;">Table of Contents</div>
+  <ul class="normlist">
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_overview'); return false;">Overview</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_icons'); return false;">Traffic Icons</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_sort'); return false;">How to Sort</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_narrow'); return false;">How to Narrow</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_old'); return false;">Gadget Changes</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_credits'); return false;">Credits</a></li>
+    <li><a title="Go back to the table of contents" href="" onclick="list.scroll('h_about'); return false;">About the Author</a></li>
+  </ul>
+
+
+  <div class="myh3" id="h_icons">Traffic Icons</div>
+  <ul class="barelist">
+    <li><img src="http://boolean.googlepages.com/511_incidents.gif" class="icon" title="Incident" />Incidents refer to traffic accidents, stalled vehicles, debris, short term road construction, etc. that affect traffic conditions.</li>
+    <li><img src="http://boolean.googlepages.com/511_events.gif" class="icon" title="Event" />Events refer to sporting events, concerts, parades, and any other public event that can affect traffic.</li>
+    <li><img src="http://boolean.googlepages.com/511_construction.gif" class="icon" title="Construction" />Construction refers to areas where long term road construction is affecting traffic.</li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list.scroll('h_toc'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_sort">How to Sort</div>
+  <div class="tail">
+    <p>Use the sort function to set the order in which the traffic items display.</p>
+    <dl class="tail">
+      <dt>Type</dt><dd>Sorts by item type, then by location.</dd>
+      <dt>Where</dt><dd>Sorts by item location, then by time.</dd>
+      <dt>When</dt><dd>Sorts by item time.</dd>
+    </dl>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list.scroll('h_toc'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_narrow">How to Narrow</div>
+    <p>Use the narrow function to permanently show or hide traffic items you define.</p>
+    <dl class="tail">
+      <dt>Select hide then type I-880 N</dt><dd>Shows all items except those that occured on I-880 (Southbound).</dd>
+      <dt>Select show then type I-280, US-101 N</dt><dd>Shows only items that occured on I-280 (either direction) or US-101 (Northbound).</dd>
+      <dt>Clear the text field</dt><dd>Shows all items.</dd>
+    </dl>
+    <p>Parts of highways and road names work as well.  So typing 280 will work if you don't want to type I-280, and typing 80 will catch all items that happen at I-80, I-280, I-380, etc.</p>
+  </div>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list.scroll('h_toc'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" align="top" />
+    </a>
+  </div>
+
+  <div class="myh3" id="h_old">Gadget Changes</div>
+  <p>This gadget can now be added to webpages and Google Desktop.  The tradeoff for this is that preferences can no longer be saved in real time without reloading the page.  If you prefer to continue using the old version of this gadget you can do so by clicking <a target="_blank" href="http://fusion.google.com/add?moduleurl=http%3A//boolean.googlepages.com/trafficinline.xml"><img src="http://buttons.googlesyndication.com/fusion/add.gif" width="104" height="17" border="0" alt="Add to Google"></a></p>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list.scroll('h_toc'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_credits">Credits</div>
+  <ul class="normlist tail">
+    <li>Data from <a href="http://traffic.511.org/" target="_blank">511.org</a></li>
+    <li>
+      <img src="http://boolean.googlepages.com/511_incidents.gif" class="icon" title="Incident"/>
+      <img src="http://boolean.googlepages.com/511_events.gif" class="icon" title="Event" />
+      <img src="http://boolean.googlepages.com/511_construction.gif" class="icon" title="Construction"/>
+      icons by <a href="http://traffic.511.org/" target="_blank">511.org</a>
+    </li>
+    <li>
+      <img src="http://boolean.googlepages.com/511_sort.gif" class="icon" />
+      <img src="http://boolean.googlepages.com/511_narrow.gif" class="icon" />
+      <img src="http://boolean.googlepages.com/511_help.gif" class="icon" />
+      <img src="http://boolean.googlepages.com/511_arrow_tdr.gif" class="icon" />
+      <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" />
+      <img src="http://boolean.googlepages.com/511_loading.gif" class="icon" />
+      icons by <a href="http://www.famfamfam.com/lab/icons/silk/" target="_blank">famfamfam.com</a>
+    </li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list.scroll('h_toc'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" align="top" />
+    </a>
+  </div>
+
+
+  <div class="myh3" id="h_about">About the Author</div>
+  <p class="tail">If inclined, send comments, questions or criticisms to me by <a href="mailto:boolean+traffic@gmail.com">e-mail</a> or <a href="http://www.talisweb.com/justin/" target="_blank">web</a>.</p>
+  <p>Other gadgets I have developed:</p>
+  <ul class="normlist">
+    <li><a href="http://www.google.com/ig/directory?num=24&url=http://www.talisweb.com/justin/gmodules/localweather/localweather.xml&q=&start=0" target="_blank">Local Weather</a></li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="" onclick="list.scroll('h_toc'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" class="icon" align="top" />
+    </a>
+  </div>
+
+</div>
+
+]]>
+</Content>
+</Module>
