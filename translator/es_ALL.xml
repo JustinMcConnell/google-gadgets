@@ -1,0 +1,38 @@
+<messagebundle>
+  <msg name="title">Traductor Bastante Universal</msg>
+  <msg name="header">Tipo texto original aquí</msg>
+  <msg name="translate">Traducir</msg>
+  <msg name="icon_swap_text">Revertir idiomas</msg>
+  <msg name="icon_loading_text">Cargando traducción</msg>
+  <msg name="lang_pairs">
+    [{"k":"de|fr","v":"alemán a francés"},
+     {"k":"de|en","v":"alemán a inglés"},
+     {"k":"ar|en","v":"árabe a inglés"},
+     {"k":"zh|en","v":"chino a inglés"},
+     {"k":"zh-CN|zh-TW","v":"chino (simplificado a tradicional)"},
+     {"k":"zh-TW|zh-CN","v":"chino (tradicional a simplificado)"},
+     {"k":"ko|en","v":"coreano a inglés"},
+     {"k":"es|en","v":"español a inglés"},
+     {"k":"fr|de","v":"francés a alemán"},
+     {"k":"fr|en","v":"francés a inglés"},
+     {"k":"el|en","v":"griego a inglés"},
+     {"k":"nl|en","v":"holandés a inglés"},
+     {"k":"en|de","v":"inglés a alemán"},
+     {"k":"en|ar","v":"inglés a árabe"},
+     {"k":"en|zh-CN","v":"inglés a chino (simplificado)"},
+     {"k":"en|zh-TW","v":"inglés a chino (tradicional)"},
+     {"k":"en|ko","v":"inglés a coreano"},
+     {"k":"en|es","v":"inglés a español"},
+     {"k":"en|fr","v":"inglés a francés"},
+     {"k":"en|el","v":"inglés a griego"},
+     {"k":"en|nl","v":"inglés a holandés"},
+     {"k":"en|it","v":"inglés a italiano"},
+     {"k":"en|ja","v":"inglés a japonés"},
+     {"k":"en|pt","v":"inglés a portugués"},
+     {"k":"en|ru","v":"inglés a ruso"},
+     {"k":"it|en","v":"italiano a inglés"},
+     {"k":"ja|en","v":"japonés a inglés"},
+     {"k":"pt|en","v":"portugués a inglés"},
+     {"k":"ru|en","v":"ruso a inglés"}]
+  </msg>
+</messagebundle>

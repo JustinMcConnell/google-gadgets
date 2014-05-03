@@ -1,0 +1,38 @@
+<messagebundle>
+  <msg name="title">Somewhat Universal Translator</msg>
+  <msg name="header">Type original text here</msg>
+  <msg name="translate">Translate</msg>
+  <msg name="icon_swap_text">Swap languages</msg>
+  <msg name="icon_loading_text">Loading translation</msg>
+  <msg name="lang_pairs">
+    [{"k":"ar|en","v":"Arabic to English"},
+     {"k":"zh|en","v":"Chinese to English"},
+     {"k":"zh-CN|zh-TW","v":"Chinese (Simplified to Traditional)"},
+     {"k":"zh-TW|zh-CN","v":"Chinese (Traditional to Simplified)"},
+     {"k":"nl|en","v":"Dutch to English"},
+     {"k":"en|ar","v":"English to Arabic"},
+     {"k":"en|zh-CN","v":"English to Chinese (Simplified)"},
+     {"k":"en|zh-TW","v":"English to Chinese (Traditional)"},
+     {"k":"en|nl","v":"English to Dutch"},
+     {"k":"en|fr","v":"English to French"},
+     {"k":"en|de","v":"English to German"},
+     {"k":"en|el","v":"English to Greek"},
+     {"k":"en|it","v":"English to Italian"},
+     {"k":"en|ja","v":"English to Japanese"},
+     {"k":"en|ko","v":"English to Korean"},
+     {"k":"en|pt","v":"English to Portuguese"},
+     {"k":"en|ru","v":"English to Russian"},
+     {"k":"en|es","v":"English to Spanish"},
+     {"k":"fr|en","v":"French to English"},
+     {"k":"fr|de","v":"French to German"},
+     {"k":"de|en","v":"German to English"},
+     {"k":"de|fr","v":"German to French"},
+     {"k":"el|en","v":"Greek to English"},
+     {"k":"it|en","v":"Italian to English"},
+     {"k":"ja|en","v":"Japanese to English"},
+     {"k":"ko|en","v":"Korean to English"},
+     {"k":"pt|en","v":"Portuguese to English"},
+     {"k":"ru|en","v":"Russian to English"},
+     {"k":"es|en","v":"Spanish to English"}]
+  </msg>
+</messagebundle>

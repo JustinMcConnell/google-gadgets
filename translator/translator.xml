@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs
+    title               = "Somewhat Universal Translator"
+    directory_title     = "Somewhat Universal Translator"
+    title_url           = "http://translate.google.com/"
+    description         = "Quickly translate from one language to another with the Somewhat Universal Translator."
+    author              = "Justin McConnell"
+    author_email        = "boolean+gmodules@gmail.com"
+    author_location     = "San Francisco, CA"
+    author_affiliation  = "http://www.talisweb.com/justin/"
+    author_link         = "http://www.talisweb.com/justin/"
+    author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+    author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+    author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+    screenshot          = ""
+    thumbnail           = ""
+    height              = "190"
+    width               = "340"
+    scaling             = "true"
+    scrolling           = "false"
+    singleton           = "false">
+    <Require feature="dynamic-height"/>
+    <Require feature="setprefs"/>
+    <Require feature="settitle"/>
+    
+    <Locale messages="http://www.talisweb.com/justin/gmodules/translator/ALL_ALL.xml"/>
+    <Locale lang="en" messages="http://www.talisweb.com/justin/gmodules/translator/en_ALL.xml"/>
+    <Locale lang="es" messages="http://www.talisweb.com/justin/gmodules/translator/es_ALL.xml"/>
+  </ModulePrefs>
+  
+  <UserPref name="lang" datatype="hidden" default_value="en|es"/>
+  <UserPref name="title" display_name="Title" default_value=""/>
+  <UserPref name="header" display_name="Default Text" default_value=""/>
+
+  <Content type="html">
+    <![CDATA[
+    <style type="text/css">
+      /* Browser reset rules */
+      html, body, div, span, h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, font, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,dl, dt, dd, ol, ul, li,fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-weight: inherit;
+        font-style: inherit;
+        font-size: 100%;
+        font-family: inherit;
+      }
+      body {
+        font-size: 100%;
+        line-height: 1.125em;
+        color: #000000;
+        background: #ffffff;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      ol, ul {
+        list-style: none;
+      }
+      
+      /* Gadget specific rules */
+      body {
+        padding: 2px;
+      }
+      #translate_form {
+        width: 100%;
+      }
+      #translate_text, #translate_results {
+        width: 100%;
+        max-width: 500px;
+        height: 75px;
+        font-size: .875em;
+        font-family: inherit;
+        padding: 2px;
+        display: block;
+      }
+      #translate_text {
+        margin-bottom: 3px;
+      }
+      #translate_results {
+        margin-top: 3px;
+      }
+      #translate_icon {
+        margin-bottom: -2px;
+      }
+      #translate_lang, #translate_go {
+        font-size: .75em;
+        font-family: inherit;
+      }
+    </style>
+
+    <form name="translate_form" id="translate_form" onsubmit="return false;">
+      <textarea name="translate_text" id="translate_text"></textarea>
+      <select id="translate_lang" name="translate_lang" name="langpair"></select>
+      <input id="translate_go" name="translate_go" type="submit" value="__MSG_translate__">
+      <a href="javascript:void(0);" id="translate_link">
+        <img id="translate_icon" 
+             width="16" 
+             height="16" 
+             alt="__MSG_icon_swap_text__" 
+             title="__MSG_icon_swap_text__" 
+             src="">
+      </a>
+      <textarea id="translate_results" name="translate_results"></textarea>
+    </form>
+
+    <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+    
+    <script type="text/javascript">
+    google.load("language", "1");
+   
+    var ut = {
+      prefs : new _IG_Prefs(),
+      init : function() {
+        ut.setupDomEvents();
+        ut.setGadgetTitle();
+        
+        var lang_text = Dom.get("translate_text");
+        var default_text = ut.prefs.getString("header") || ut.prefs.getMsg("header");
+        if (default_text) {
+          lang_text.value = default_text;
+        }
+        
+        var swapIcon = Dom.get("translate_icon");
+        swapIcon.src = _IG_GetCachedUrl("http://www.talisweb.com/justin/gmodules/translator/translator_switch.png");
+        
+        var c_langs = JSON.parse(ut.prefs.getMsg("lang_pairs"));
+        var c_option;
+        var lang_select = Dom.get("translate_lang");
+        lang_select.style.display = "none";
+        for (var i = 0; i < c_langs.length; i++) {
+          c_option = document.createElement("option");
+          c_option.value = c_langs[i].k;
+          c_option.appendChild(document.createTextNode(c_langs[i].v));
+          lang_select.appendChild(c_option);
+        }
+        lang_select.style.display = "";
+
+        var saved_lang = ut.prefs.getString("lang");
+        if (saved_lang) {
+          ut.changeLanguage(saved_lang);
+        }
+
+        ut.setGadgetHeight();
+      },
+      setupDomEvents : function() {
+        Event.add("translate_form", "submit", ut.gatherDataForTranslation);
+        Event.add("translate_lang", "change", ut.userSelectedLanguage);
+        Event.add("translate_link", "click", ut.swapLanguages);
+        Event.add("translate_text", "focus", ut.removeDefaultText);
+        Event.add(window, "unload", ut.destroyDomEvents);
+      },
+      destroyDomEvents : function() {
+        Event.remove("translate_form", "submit", ut.gatherDataForTranslation);
+        Event.remove("translate_lang", "change", ut.userSelectedLanguage);
+        Event.remove("translate_link", "click", ut.swapLanguages);
+        Event.remove("translate_text", "focus", ut.removeDefaultText);
+        // remove load and unload events too?
+        //Event.remove(window, "load", ut.init);
+        //Event.remove(window, "unload", ut.destroyDomEvents);
+      },
+      setGadgetHeight : function() {
+        if (_IG_AdjustIFrameHeight) {
+          _IG_AdjustIFrameHeight(document.documentElement.clientHeight);
+        }
+      },
+      setGadgetTitle : function() {
+        if (_IG_SetTitle) {
+          var title = ut.prefs.getString("title") || ut.prefs.getMsg("title");
+          if (title) {
+            _IG_SetTitle(title);
+          }
+        }
+      },
+      removeDefaultText : function() {
+        Dom.get("translate_text").value = "";
+        Event.remove("translate_text", "focus", ut.removeDefaultText);
+      },
+      changeLanguage : function(new_lang) {
+        if (new_lang) {
+          Dom.get("translate_lang").value = new_lang;
+        }
+      },
+      userSelectedLanguage : function() {
+        ut.changeLanguage();
+        ut.rememberLanguage();
+      },
+      rememberLanguage : function() {
+        if (ut.prefs.set) {
+          var lang = Dom.get("translate_lang");
+          if (lang.value) {
+            ut.prefs.set("lang", lang.value);
+          }
+        }
+      },
+      swapLanguages : function() {
+        var lang = Dom.get("translate_lang");
+        var langPair = lang.value.split(/\|/); 
+        if (langPair && langPair.length == 2) {
+          // 30-03-2008 zh|en -> en|zh is invalid so choose en|zh-CN arbitrarily
+          if (langPair[0] == "zh" && langPair[1] == "en") {
+            langPair[0] = "zh-CN";
+          }
+          
+          // 30-03-2008 en|zh-TW -> zh-TW|en and en|zh-CN -> zh-CN|en are invalid so choose en|zh arbitrarily
+          if (langPair[0] == "en" && langPair[1].substring(0, 2) == "zh") {
+            langPair[1] = "zh";
+          }
+          lang.value = langPair[1] + "|" + langPair[0];
+          ut.rememberLanguage();
+        
+          var from = Dom.get("translate_text");
+          var to = Dom.get("translate_results");
+          var temp = from.value;
+          from.value = to.value;
+          to.value = temp;
+        }
+      },
+      iconFunc : function(src, alt_title) {
+        var icon = Dom.get("translate_icon");
+        icon.src = src;
+        icon.alt = alt_title;
+        icon.title = alt_title;
+      },
+      iconLoading : function() {
+        ut.iconFunc(_IG_GetCachedUrl("http://www.talisweb.com/justin/gmodules/translator/translator_loading.gif"),
+                    ut.prefs.getMsg("icon_loading_text"));
+      },
+      iconSwap : function() {
+        ut.iconFunc(_IG_GetCachedUrl("http://www.talisweb.com/justin/gmodules/translator/translator_switch.png"), 
+                    ut.prefs.getMsg("icon_swap_text"));
+      },      
+      translateWithGoogle : function(text, lang_src, lang_dest, callback) {
+        google.language.translate(text, lang_src, lang_dest, callback);
+      },
+      gatherDataForTranslation : function(e) {
+        e = e || window.event;
+        var langPair = Dom.get("translate_lang").value.split(/\|/);
+        if (langPair && langPair.length == 2) {
+          ut.iconLoading();
+          ut.translateWithGoogle(Dom.get("translate_text").value,
+                                 langPair[0],
+                                 langPair[1],
+                                 ut.translationResults);
+        }
+        
+        if (e.preventDefault) {
+          e.preventDefault();
+        }
+        return false;
+      },
+      translationResults : function(result) {
+        var output = Dom.get("translate_results");
+        if (!result.error) {
+          output.value = result.translation;
+        } else {
+          output.value = result.message + " (" + result.code + ")";
+        }
+        ut.iconSwap();
+      }
+    };
+
+    // Dom.get and Event.add yoinked from http://www.dustindiaz.com/add-remove-elements-reprise/
+    // Event.remove written 2008/03/23
+    var Dom = {
+      get: function(el) {
+        if (typeof el === 'string') {
+          return document.getElementById(el);
+        } else {
+          return el;
+        }
+      }
+    };
+    var Event = {
+      add: function() {
+        if (window.addEventListener) {
+          return function(el, type, fn) {
+            Dom.get(el).addEventListener(type, fn, false);
+          };
+        } else if (window.attachEvent) {
+          return function(el, type, fn) {
+            var f = function() {
+              fn.call(Dom.get(el), window.event);
+            };
+            Dom.get(el).attachEvent('on' + type, f);
+          };
+        }
+      }(),
+      remove: function() {
+        if (window.removeEventListener) {
+          return function(el, type, fn) {
+            Dom.get(el).removeEventListener(type, fn, false);
+          };
+        } else if (window.detachEvent) {
+          return function(el, type, fn) {
+            var f = function() {
+              fn.call(Dom.get(el), window.event);
+            };
+            Dom.get(el).detachEvent('on' + type, f);
+          };
+        }
+      }()      
+    };
+    
+    Event.add(window, "load", ut.init);
+
+    // json.org parsing 
+    if(!this.JSON){JSON=function(){function f(n){return n<10?'0'+n:n}Date.prototype.toJSON=function(){return this.getUTCFullYear()+'-'+f(this.getUTCMonth()+1)+'-'+f(this.getUTCDate())+'T'+f(this.getUTCHours())+':'+f(this.getUTCMinutes())+':'+f(this.getUTCSeconds())+'Z'};var meta={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'},escapeable=/["\\\x00-\x1f\x7f-\x9f]/g;function quote(string){return escapeable.test(string)?'"'+string.replace(escapeable,function(a){var c=meta[a];if(typeof c==='string'){return c}c=a.charCodeAt();return'\\u00'+Math.floor(c/16).toString(16)+(c%16).toString(16)})+'"':'"'+string+'"'}function stringify(key,holder,replacer){var i,k,v,length,partial,value=holder[key];if(value&&typeof value==='object'&&typeof value.toJSON==='function'){value=value.toJSON(key)}if(typeof replacer==='function'){value=replacer.call(holder,key,value)}switch(typeof value){case'string':return quote(value);case'number':return isFinite(value)?String(value):'null';case'boolean':case'null':return String(value);case'object':if(!value){return'null'}partial=[];if(typeof value.length==='number'&&!(value.propertyIsEnumerable('length'))){length=value.length;for(i=0;i<length;i+=1){partial[i]=stringify(i,value,replacer)||'null'}return'['+partial.join(',')+']'}if(typeof replacer==='object'){length=replacer.length;for(i=0;i<length;i+=1){k=replacer[i];if(typeof k==='string'){v=stringify(k,value,replacer);if(v){partial.push(quote(k)+':'+v)}}}}else{for(k in value){v=stringify(k,value,replacer);if(v){partial.push(quote(k)+':'+v)}}}return'{'+partial.join(',')+'}'}}return{stringify:function(value,replacer){if(typeof replacer!=='function'){if(!replacer){replacer=function(key,value){if(!Object.hasOwnProperty.call(this,key)){return undefined}return value}}else if(typeof replacer!=='object'||typeof replacer.length!=='number'){throw new Error('JSON.stringify');}}return stringify('',{'':value},replacer)},parse:function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==='object'){for(k in value){if(Object.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v}else{delete value[k]}}}}return reviver.call(holder,key,value)}if(/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g,'@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,']').replace(/(?:^|:|,)(?:\s*\[)+/g,''))){j=eval('('+text+')');return typeof reviver==='function'?walk({'':j},''):j}throw new SyntaxError('JSON.parse');},quote:quote}}()}
+    
+    </script>
+    ]]>
+  </Content>
+</Module>    
