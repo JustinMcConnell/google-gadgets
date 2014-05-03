@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs
+    title               = "Lyrics"
+    directory_title     = "Lyrics"
+    title_url           = "http://www.urbandictionary.com/"
+    description         = "Lookup song lyrics by artist name and song title."
+    author              = "Justin McConnell"
+    author_email        = "boolean+gmodules@gmail.com"
+    author_location     = "San Francisco, CA"
+    author_affiliation  = "http://www.talisweb.com/justin/"
+    author_link         = "http://www.talisweb.com/justin/"
+    author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+    author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+    author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+    screenshot          = "http://www.bayareacoder.com/gogo/lyrics/screenshot.png"
+    thumbnail           = "http://www.bayareacoder.com/gogo/lyrics/thumbnail.png"
+    height              = "250"
+    scaling             = "true"
+    scrolling           = "true"
+    singleton           = "false">
+    <Require feature="analytics" />
+    <Require feature="setprefs"/>
+    <Require feature="settitle"/>
+  </ModulePrefs>
+  
+  <UserPref name="title" display_name="Gadget Title" default_value="Lyrics"/>
+  <UserPref datatype="string" display_name="Default Artist" name="default_artist" default_value="Pink Floyd"/>
+  <UserPref datatype="string" display_name="Default Song" name="default_song" default_value="Time"/>
+
+  <Content type="html">
+    <![CDATA[
+    <style type="text/css">
+      /* Browser reset rules */
+      html, body, div, span, h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, font, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,dl, dt, dd, ol, ul, li,fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-weight: inherit;
+        font-style: inherit;
+        font-size: 100%;
+        font-family: inherit;
+      }
+      body {
+        font-size: 100%;
+        line-height: 1.125em;
+        color: #000000;
+        background: #ffffff;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      ol, ul {
+        list-style: none;
+      }
+      
+      /* Gadget specific rules */
+      body {
+        background: transparent url("http://bayareacoder.com/gogo/lyrics/fade.png") repeat-x top left;
+      }
+      a, a:link, a:visited {
+        color: #000;
+        text-decoration: none;
+        border-bottom: 1px dotted #000;
+      }
+      a:active {
+        color: #444;
+        border-bottom: 1px solid #000;
+      }
+      a:hover, a:focus {
+
+      }
+      a.external, a.external:link {
+        color: blue;
+        border-bottom-color: blue;
+      }
+      a.external:visited {
+        color: purple;
+        border-bottom-color: purple;
+      }      
+      #container {
+        font-size: 0.875em;
+        padding: 0 5px;
+        max-width: 35.714em;
+      }
+      #search {
+        max-width: 30em;
+        margin: 0 auto;
+      }
+      #search div {
+        float: left;
+        width: 32%;
+        max-width: 14.286em;
+      }
+      #search label {
+        display: block;
+        font-weight: bold;
+        font-variant: small-caps;
+      }
+      #search_submit {
+        width: 100%;
+        min-width: 5.5em;
+        height: 2em;
+        line-height: 1.5em;
+        font-size: 1.5em;
+        font-family: Georgia, Palatino Linotype, Times, serif;
+      }      
+      #search_artist, #search_song {
+        width: 95%;
+        color: #555;
+      }
+      #search_error {
+        font-size: 0.857em;
+        clear: both;
+      }
+      #search_loading {
+        display: none;
+        margin-top: 0.714em;
+        text-align: center;
+        color: #888;
+      }
+      #song {
+        clear: both;
+      }
+      #song_title, label {
+        font-family: Verdana, Tahoma, Helvetica, Arial, sans-serif;
+      }
+      #song_title {
+        font-size: 1.714em;
+        line-height: 1em;
+        font-weight: bold;
+        text-transform: uppercase;
+        padding-top: 0.416em;
+      }
+      #song_artist {
+        color: #444;
+        font-style: italic;
+        font-family: Georgia, Palatino Linotype, Times, serif;
+        padding: 0.071em 0;
+      }
+      #song_album {
+        color: #444;
+        margin-bottom: 0.714em;
+      }
+      #song_lyrics {
+        clear: both;
+        color: #444;  
+        font-size: 0.857em;
+        line-height: 1.415em;
+      }
+      #song_favorite {
+        display: none;
+        font-size: 0.857em;
+        margin-top: 0.833em;
+      }
+      #song_edit {
+        display: none;
+        font-size: 0.857em;
+        margin: 0.833em 0;
+      }
+      #album_controls {
+        display: none;
+        text-align: center;
+        padding-top: 0.714em;
+      }
+      #album_prev {
+        margin: 0 .5em;
+      }
+      #album_next {
+        margin-left: .5em;
+      }
+      #album_count {
+        margin-right: 0.625em;
+      }
+      input.required {
+        border: 1px solid #c00;
+      }
+      p.required {
+        color: #c00;
+      }
+      .disabled {
+        border-bottom: 0 !important;
+        color: #888 !important;
+        outline: 0 !important;
+        cursor: default !important;
+      }
+    </style>
+
+    <div id="container">
+      <form id="search" onsubmit="return false;">
+        <div>
+          <label for="search_artist">Artist</label>
+          <input id="search_artist" name="search_artist" type="text" value="Pink Floyd" title="Artist or band name goes here">
+        </div>
+        <div>
+          <label for="search_song">Song</label>
+          <input id="search_song" name="search_song" type="text" value="Time" title="Song title goes here">
+        </div>
+        <div>
+          <button id="search_submit" type="submit" title="Search for lyrics">Karaoke!</button>
+        </div>
+        <p id="search_error" class="required"></p>
+        <p id="search_loading">Loading <img src="http://bayareacoder.com/gogo/lyrics/loading.gif" width="16" height="16" alt=""></p>
+      </form>
+      <div id="song">
+        <p id="album_controls">
+          <span id="album_count"></span>
+          <a id="album_prev" href="javascript:void(0);" title="Show lyrics for the previous song">Previous</a> |
+          <a id="album_next" href="javascript:void(0);" title="Show lyrics for the next song">Next</a>
+        </p>
+        <p id="song_title"></p>
+        <p id="song_artist"></p>
+        <p id="song_album"></p>
+        <p id="song_lyrics"></p>
+        <p id="song_favorite"></p>
+        <p id="song_edit"><a href="" class="external" target="new" title="Submit a correction to Lyricsfly.com">Someone goofed these lyrics.  I can do a better job.</a></p>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      _IG_Analytics("UA-51692-4", "/lyrics");
+
+      var lyrics = {
+        prefs : new _IG_Prefs(),
+        songs : [],
+        idx : 0,
+        init : function() {
+          Event.add("search", "submit", function() {
+            lyrics.lyricsFlySearch.call(lyrics);
+          });
+          Event.add("album_prev", "click", function() {
+            lyrics.prevSong.call(lyrics);
+          });
+          Event.add("album_next", "click", function() {
+            lyrics.nextSong.call(lyrics);
+          });         
+          
+          if (this.prefs) {
+            Dom.get("search_artist").value = this.prefs.getString("default_artist");
+            Dom.get("search_song").value = this.prefs.getString("default_song");
+          }
+
+          lyrics.lyricsFlySearch.call(lyrics);
+        },
+        lyricsFlySearch : function() {
+          this.clearErrors();
+          this.loading(true);
+
+          var euc = window.encodeURIComponent;
+          var elems = ("search").elements;
+        
+          var artist = Dom.get("search_artist").value;
+          if (!artist) {
+            this.showError("search_artist", "Oops, an artist or band name should be here");
+            return;
+          }
+          var song = Dom.get("search_song").value;
+          if (!song) {
+            this.showError("search_song", "Oops, a song title should be here");
+            return;
+          }
+          var url = ("http://lyricsfly.com/api/api.php?"    + // url
+                    "i=5cb2746aa5184c055-bayareacoder.com&" + // license key
+                    "a=" + euc(artist) + "&" +                // artist name
+                    "t=" + euc(song));                        // song title
+          
+          var requestLoaded = false;
+
+          _IG_FetchXmlContent(url, function(results) {
+            requestLoaded = true;
+            lyrics.loading(false);
+            if (!results || typeof results === "string") {
+              lyrics.servicesDown.call(lyrics);
+            } else {            
+              lyrics.saveResults.call(lyrics, results);
+              lyrics.idx = 0;
+              lyrics.showSong.call(lyrics, lyrics.idx);
+            }
+          });
+          
+          setTimeout(function() {
+            if (!requestLoaded) {
+              lyrics.loading(false);
+              lyrics.servicesDown.call(lyrics);
+            }
+          }, 10000);
+        },
+        saveResults : function(results) {
+          this.songs = [];
+          var song, songsXml = results.getElementsByTagName("sg");
+          for (var i=0, ic=songsXml.length; i<ic; i++) {
+            song = songsXml[i];
+            if (song.childNodes.length >= 6) {
+              this.songs.push({
+                checksum : song.getElementsByTagName("cs")[0].firstChild.nodeValue,
+                id : song.getElementsByTagName("id")[0].firstChild.nodeValue,
+                artist : song.getElementsByTagName("ar")[0].firstChild.nodeValue,
+                title : song.getElementsByTagName("tt")[0].firstChild.nodeValue,
+                album : song.getElementsByTagName("al")[0].firstChild.nodeValue,
+                lyrics : song.getElementsByTagName("tx")[0].firstChild.nodeValue
+              });
+            }
+          }
+        },
+        nextSong : function() {
+          if (this.idx < this.songs.length - 1) {
+            this.showSong(++this.idx);
+          }
+        },
+        prevSong : function() {
+          if (this.idx >= 1) {
+            this.showSong(--this.idx);
+          }        
+        },
+        showSong : function(idx) {
+          var song = this.songs[idx];
+          if (song) {
+            var lyrics = song.lyrics
+                         .replace(/\[br\]/g, "<br>")
+                         .replace(/lyricsfly\.com/, "<a href='http://lyricsfly.com/' class='external' target='_blank' title='Open the Lyricsfly.com website in a new tab'>lyricsfly.com</a>");
+            if (lyrics) {
+              Dom.get("song_lyrics").innerHTML = lyrics;
+            }
+            
+            Dom.get("song_title").innerHTML = song.title;            
+            Dom.get("song_artist").innerHTML = "by " + song.artist;
+            Dom.get("song_album").innerHTML = "on '"  + song.album + "'";
+            Dom.get("song_edit").firstChild.href = "http://lyricsfly.com/search/correction.php?" + 
+                                                   song.checksum + "&" +
+                                                   "id=" + song.id;
+            Dom.get("song_edit").style.display = "block";
+            Dom.get("album_controls").style.display = "block";
+            
+            this.favoriteLink(true);
+          } else {
+            Dom.get("song_lyrics").innerHTML = "No lyrics.  Bummer!";
+            Dom.get("song_artist").innerHTML = "(" + Dom.get("search_artist").value + ")";
+            Dom.get("song_title").innerHTML = Dom.get("search_song").value;
+            Dom.get("song_album").innerHTML = "";
+            Dom.get("song_edit").style.display = "none";
+            Dom.get("album_controls").style.display = "none";
+            
+            this.favoriteLink(false);
+          }
+
+          this.adjustLinks();
+        },
+        setFavorite : function(artist, song) {
+          if (this.prefs) {
+            this.prefs.set("default_artist", artist, "default_song", song);
+          }
+          Dom.get("song_favorite").innerHTML = "OK, done!  These lyrics will load when the gadget does.";
+        },
+        favoriteLink : function(enabled) {
+          var fav = Dom.get("song_favorite");
+          if (enabled) {
+            fav.innerHTML = "<a href='javascript:void(0);' title='Load these lyrics automatically with the gadget.'>Cool song, set these lyrics as my default.</a>";
+            fav.style.display = "block";
+            Event.add(fav.firstChild, "click", function() {
+              lyrics.setFavorite.call(lyrics, Dom.get("search_artist").value, Dom.get("search_song").value);
+            });
+          } else {
+            fav.style.display = "none";
+          }
+        },
+        showError : function(domId, errorMsg) {
+          var formElem = Dom.get(domId);
+          if (formElem) {
+            formElem.className = "required";
+            formElem.focus();
+          }
+          Dom.get("search_error").innerHTML = errorMsg;
+        },
+        clearErrors : function() {
+          var elems = Dom.get("search").elements;
+          for(var i=0, ic=elems.length; i<ic; i++) {
+            elems[i].className = "";
+          }
+          Dom.get("search_error").innerHTML = "";        
+        },
+        servicesDown : function() {
+          Dom.get("song_lyrics").innerHTML = "Looks like the Lyricsfly.com server is down.  D'oh!";
+        },
+        adjustLinks : function() {
+          this.resetLinks();
+
+          var idx = this.idx;
+          var max = this.songs.length;
+
+          if (max > 1) {
+            Dom.get("album_count").innerHTML = "Song " + (idx + 1) + " of " + max;
+            if (idx == 0) {
+              Dom.get("album_prev").className = "disabled";
+            } else if (idx >= max - 1) {
+              Dom.get("album_next").className = "disabled";
+            }
+          } else {
+            Dom.get("album_controls").style.display = "none";
+          }
+        },
+        resetLinks : function() {
+          function resetOne(domId) {
+            var link = Dom.get(domId);
+            link.className = "";
+          }
+          resetOne("album_prev");
+          resetOne("album_next");           
+          Dom.get("album_controls").style.display = "block";
+        },
+        loading : function(flag) {
+          if (typeof flag == "undefined") {
+            flag = false;
+          }
+          Dom.get("search_loading").style.display = flag ? "block" : "none";
+        }
+      };
+
+      // Dom.get and Event.add yoinked from http://www.dustindiaz.com/add-remove-elements-reprise/
+      // Event.remove written 2008/03/23
+      var Dom = {
+        get: function(el) {
+          if (typeof el === 'string') {
+            return document.getElementById(el);
+          } else {
+            return el;
+          }
+        }
+      };
+      var Event = {
+        add: function() {
+          if (window.addEventListener) {
+            return function(el, type, fn) {
+              Dom.get(el).addEventListener(type, fn, false);
+            };
+          } else if (window.attachEvent) {
+            return function(el, type, fn) {
+              var f = function() {
+                fn.call(Dom.get(el), window.event);
+              };
+              Dom.get(el).attachEvent('on' + type, f);
+            };
+          }
+        }(),
+        remove: function() {
+          if (window.removeEventListener) {
+            return function(el, type, fn) {
+              Dom.get(el).removeEventListener(type, fn, false);
+            };
+          } else if (window.detachEvent) {
+            return function(el, type, fn) {
+              var f = function() {
+                fn.call(Dom.get(el), window.event);
+              };
+              Dom.get(el).detachEvent('on' + type, f);
+            };
+          }
+        }()      
+      };
+
+      Event.add(window, "load", function() {
+        lyrics.init.call(lyrics);
+      });
+    </script>
+    ]]>
+  </Content>
+</Module>    
