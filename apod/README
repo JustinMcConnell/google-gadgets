@@ -1,1 +1,1 @@
-This gadget displays the Astronomy Picture of the Day.  It will randomly contact one of a number of APOD servers and get the current day's HTML file.  Then it scrapes the data out of the HTML file and diplays it.
+This gadget displays the Astronomy Picture of the Day.  It will randomly contact one of a number of APOD servers and get the current day's HTML file.  Then it scrapes the data out of the HTML file and diplays it.  The main file is apod.xml.
