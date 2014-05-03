@@ -1,0 +1,1345 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+<ModulePrefs
+    author="Justin McConnell"
+    author_email="boolean@gmail.com"
+    title="We Feel Fine"
+    title_url="http://www.wefeelfine.org/"
+    scrolling="true"
+    scaling="true"
+    height="300"
+/>
+
+<Content type="html">
+<![CDATA[
+
+<style type="text/css">
+body {
+  font-size: 72.5%;
+  font-family: Tahoma, Helvetica, Verdana, sans-serif;
+  color: white;
+  background: #191919;
+}
+
+canvas {
+
+}
+
+a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+#data {
+  margin: 22px 0 0 0;
+}
+
+#list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+#list li {
+  margin: 0 3px 3px 10px;
+}
+
+#status {
+  color: #F02662;
+  padding: 12px 0 12px 2em;
+  display: none;
+}
+
+#find {
+  display: none;
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: .3em 0 .3em 0;
+  font-size: 2.0em;
+  background: #451C28;
+  color: #F42764;
+}
+
+#find:hover {
+  cursor: pointer;
+  background: #711F37;
+}
+
+
+#accordion {
+  margin: 22px 0 0 00;
+  height: auto;
+  display: none;
+}
+#accordion dd {
+  margin-left: 0;
+  padding-left: 0;
+
+}
+
+
+#controls {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  background: #451C28;
+  color: #F42764;
+  text-align: center;
+}
+#controls > div:hover {
+  color: #FFFFFF;
+  cursor: pointer;
+}
+#playpause {
+  float: left;
+  padding: 3px 0 0 3px;
+}
+#edit {
+  float: right;
+  padding: 3px 3px 0 9px;
+}
+
+
+#letterList {
+  background: #5B1D30;
+}
+#feelingList {
+  margin-top: 3px;
+}
+
+
+
+
+.barelist {
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+div.agebox {
+  float: left;
+  width: 75px;
+  height: 75px;
+  margin: 1px;
+  padding: 0;
+  text-align: center;
+  font-size: 3.5em;
+  border: 1px solid #808080;
+  color: #808080;
+}
+div.agebox:hover {
+  border: 1px solid #FFFFFF;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+div.ageboxSelected {
+  border: 1px solid #EC2761;
+  color: #EC2761;
+}
+div.ageboxSelected:hover {
+  border: 1px solid #EC2761;
+  color: #EC2761;
+}
+
+div.allbox {
+  background: #912142;
+  color: #EC2761;
+  padding: 0.3em .3em;
+  text-align:center;
+}
+div.allbox:hover {
+  cursor: pointer;
+  color: #FFFFFF;
+}
+
+div.optionLetterOn {
+  float: left;
+  border: 0;
+  margin: 0;
+  padding: 0 1px 0 1px;
+  background: #F02662;
+}
+
+div.optionLetterOff {
+  float: left;
+  border: 0;
+  margin: 0;
+  padding: 0 1px 0 1px;
+}
+div.optionLetterOn:hover {
+  cursor: pointer;
+  background: #F02662;
+}
+div.optionLetterOff:hover {
+  cursor: pointer;
+  background: #912142;
+}
+
+div.optionFeelingOff {
+  color: #808080;
+  padding: 0 0 0 3px;
+}
+div.optionFeelingOn {
+  color: #F02662;
+  padding: 0 0 0 3px;
+}
+div.optionFeelingEven {
+  background: transparent;
+}
+div.optionFeelingOdd {
+  background: #222222;
+}
+
+div.optionFeelingOff:hover {
+  cursor: pointer;
+  color: #FFFFFF;
+}
+div.optionFeelingOn:hover {
+  cursor: pointer;
+  color: #F02662;
+}
+
+
+#listYears {
+  float: left;
+  margin-right: 20px;
+  display: block;
+}
+#listMonths {
+  float: left;
+  margin-right: 20px;
+  display: none;
+}
+#listDates {
+  float: left;
+  display: none;
+}
+#pocket6 li.listOff {
+  cursor: pointer;
+  color: #808080;
+}
+#pocket6 li.listOn {
+  cursor: pointer;
+  color: #F02662;
+}
+#pocket6 li.listOn:hover {
+  cursor: pointer;
+  color: #F02662;
+}
+#pocket6 li.listOff:hover {
+  cursor: pointer;
+  color: #FFFFFF;
+}
+
+#weather_sunny {
+  float: left;
+  width: 100px;
+  height: 95px;
+  margin: 0px 15px 0px 15px;
+}
+#weather_sunny:hover {
+  cursor: pointer;
+}
+div.weather_sunnyOff {
+  background: url(http://www.talisweb.com/justin/gmodules/feel/sunny_off.png) no-repeat;
+}
+div.weather_sunnyOff:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/sunny_hi.png) no-repeat;
+}
+div.weather_sunnyOn {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/sunny_on.png) no-repeat;
+}
+div.weather_sunnyOn:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/sunny_on.png) no-repeat;
+}
+
+#weather_clowdy {
+  float: left;
+  width: 100px;
+  height: 80px;
+  margin: 0px 15px 0px 15px;
+}
+#weather_clowdy:hover {
+  cursor: pointer;
+}
+div.weather_clowdyOff {
+  background: url(http://www.talisweb.com/justin/gmodules/feel/clowdy_off.png) no-repeat;
+}
+div.weather_clowdyOff:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/clowdy_hi.png) no-repeat;
+}
+div.weather_clowdyOn {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/clowdy_on.png) no-repeat;
+}
+div.weather_clowdyOn:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/clowdy_on.png) no-repeat;
+}
+
+#weather_rainy {
+  float: left;
+  width: 100px;
+  height: 110px;
+  margin: 0px 15px 0px 15px;
+}
+#weather_rainy:hover {
+  cursor: pointer;
+}
+div.weather_rainyOff {
+  background: url(http://www.talisweb.com/justin/gmodules/feel/rainy_off.png) no-repeat;
+}
+div.weather_rainyOff:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/rainy_hi.png) no-repeat;
+}
+div.weather_rainyOn {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/rainy_on.png) no-repeat;
+}
+div.weather_rainyOn:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/rainy_on.png) no-repeat;
+}
+
+#weather_snowy {
+  float: left;
+  width: 100px;
+  height: 95px;
+  margin: 0px 15px 0px 15px;
+}
+#weather_snowy:hover {
+  cursor: pointer;
+}
+div.weather_snowyOff {
+  background: url(http://www.talisweb.com/justin/gmodules/feel/snowy_off.png) no-repeat;
+}
+div.weather_snowyOff:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/snowy_hi.png) no-repeat;
+}
+div.weather_snowyOn {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/snowy_on.png) no-repeat;
+}
+div.weather_snowyOn:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/snowy_on.png) no-repeat;
+}
+
+#gender_female {
+  float: left;
+  width: 100px;
+  height: 179px;
+  margin: 10px 10px 10px 10px;
+}
+#gender_female:hover {
+  cursor: pointer;
+}
+div.gender_femaleOff {
+  background: url(http://www.talisweb.com/justin/gmodules/feel/female_off.png);
+}
+div.gender_femaleOff:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/female_hi.png);
+}
+div.gender_femaleOn {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/female_on.png);
+}
+div.gender_femaleOn:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/female_on.png);
+}
+
+#gender_male {
+  float: right;
+  width: 93px;
+  height: 179px;
+  margin: 10px 10px 10px 10px;
+}
+
+#gender_male:hover {
+  cursor: pointer;
+}
+
+div.gender_maleOff {
+  background: url(http://www.talisweb.com/justin/gmodules/feel/male_off.png);
+}
+div.gender_maleOff:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/male_hi.png);
+}
+div.gender_maleOn {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/male_on.png);
+}
+div.gender_maleOn:hover {
+  cursor: pointer;
+  background: url(http://www.talisweb.com/justin/gmodules/feel/male_on.png);
+}
+
+.text {
+  margin-left: 10px;
+}
+
+.meta {
+  color: #808080;
+  font-size: 1em;
+  margin-left: 10px;
+}
+.dot {
+  float: left;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  margin-top: .4em;
+}
+
+.fat {
+  padding: 3px;
+}
+
+.hack {
+  clear: both;
+}
+</style>
+
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/jquery.js"></script>
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/jquery-interface.js"></script>
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/jquery-dimensions.js"></script>
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/cyc.js"></script>
+
+<!--[if IE]><script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/excanvas.js"></script><![endif]-->
+
+<script type="text/javascript">
+/**
+ * Todo
+ *  - Re-implement vertical list animation.  This looks better but also is a usability
+ *    issue because the lower posts are stationary as the current one scrolls horitontally.
+ *  - Whirling dots at the top of the screen that correspond to the actual feelings.
+ *  - Location searching
+ *  - weather images should flow to gadget width -- currently 2x2
+ *  - age images
+ */
+
+
+
+/**
+ * feelings - An array of objects, each object representing a feeling from a single blog post.
+ * [
+ *   { born     : "1942",
+ *     city     : "Oxford",
+ *     country  : "United Kingdom",
+ *     feeling  : "smart",
+ *     gender   : "0",
+ *     lat      : "51.752434",
+ *     lon      : "-1.2558",
+ *     postdate : "2007-01-07",
+ *     posttime : "1168330660578",
+ *     sentance : "I feel smart",
+ *     state    : ""
+ *   },
+ *   ...
+ * ]
+ **/
+var feelings = [];
+
+var map = {
+  gender : {
+    "-1": "Both",
+    "0": "Female",
+    "1": "Male"
+  }
+}
+
+var options  = {
+  data : {
+    display      : "xml",
+    returnfields : "feeling,sentence,posttime,postdate,posturl,gender,born,country,state,city,lat,lon,conditions",
+    feeling      : "",
+    gender       : -1,
+    agerange     : "",
+    conditions   : "",
+    country      : "",
+    state        : "California",
+    city         : "",
+    postyear     : "",
+    postmonth    : "", //(Math.floor(Math.random()*12)+1),
+    postdate     : "",
+    limit        : 100
+  },
+
+  getUrl : function() {
+    var url = "http://api.wefeelfine.org:8080/ShowFeelings?encode=1&"+
+      (this.data.display       ? "&display="      + this.data.display       : "")+
+      (this.data.returnfields  ? "&returnfields=" + this.data.returnfields  : "")+
+      (this.data.feeling       ? "&feeling="      + this.data.feeling       : "")+
+      (this.data.gender >= 0   ? "&gender="       + this.data.gender        : "")+
+      (this.data.agerange      ? "&agerange="     + this.data.agerange      : "")+
+      (this.data.conditions    ? "&conditions="   + this.data.conditions    : "")+
+      (this.data.country       ? "&country="      + this.data.country       : "")+
+      (this.data.state         ? "&state="        + this.data.state         : "")+
+      (this.data.city          ? "&city="         + this.data.city          : "")+
+      (this.data.limit         ? "&limit="        + this.data.limit         : "");
+
+    if(this.data.postdate) {
+      url += "&postdate=" + this.data.postyear +"-"+ datePad(this.data.postmonth+1) +"-"+ datePad(this.data.postdate);
+    }
+    else {
+      if(this.data.postyear)
+        url += "&postyear=" + this.data.postyear;
+      if(this.data.postmonth || (typeof this.data.postmonth == "number" && this.data.postmonth == 0))
+        url += "&postmonth=" + datePad(this.data.postmonth+1);
+    }
+
+    return url;
+  },
+
+  // No feelings found from [gender] aged [age range] who feel [feeling] on Jan 15, 2007 when it's [conditions]
+  // No feelings found from [gender] aged [age range] who feel [feeling] in Jan 2007 when it's [conditions]
+  // No feelings found from [gender] aged [age range] who feel [feeling] in 2007 when it's [conditions] in [location]
+  // No more feelings ""
+
+  getDesc : function() {
+    var prefix = arguments[0] || "";
+    var suffix = arguments[1] || "";
+    var str    = "";
+
+    str += prefix + " from ";
+
+    if(this.data.gender >= 0)
+      str += genders[this.data.gender].toLowerCase() + "s ";
+    else
+      str += "people ";
+
+    if(this.data.agerange)
+      str += "aged " + this.data.agerange + " ";
+
+    if(this.data.feeling)
+      str += "who feel " + this.data.feeling + " ";
+
+    if(this.data.postdate)
+      str += "on " + monthNamesShort[this.data.postmonth] + " " + this.data.postdate + ", " + this.data.postyear + " ";
+    else {
+      if((this.data.postmonth || (this.data.postmonth == 0 && this.data.postmonth != "")) && this.data.postyear)
+        str += "in " + monthNamesShort[this.data.postmonth] + " " + this.data.postyear + " ";
+      else if(this.data.postyear)
+        str += "in " + this.data.postyear + " ";
+    }
+
+    if(this.data.conditions)
+      str += "when its " + conditions[this.data.conditions].toLowerCase() + " ";
+
+    if(this.data.city || this.data.state || this.data.country)
+      str += "in ";
+    if(this.data.city)
+      str += this.data.city + " ";
+    if(this.data.state)
+      str += this.data.state + " ";
+    if(this.data.country)
+      str += this.data.country + " ";
+    str += suffix;
+
+    return str;
+  }
+}
+
+var current  = 0;
+
+var paused   = false;
+
+var writing  = false;
+
+var baseImg  = "http://www.talisweb.com/justin/gmodules/feel/";
+
+var sep      = "|";
+
+// call these functions onload
+var init_funcs = [];
+
+$(document).ready(function() {
+  console.log("1");
+  loadFeelings();
+  console.log("2");
+  for(var i=0; i<init_funcs.length; i++)
+    if(typeof init_funcs[i] == "function")
+      init_funcs[i]();
+  console.log("3");
+  $("#accordion").Accordion(
+    {
+      headerSelector  : 'dt',
+      panelSelector   : 'dd',
+      activeClass     : 'myAccordionActive',
+      hoverClass      : 'myAccordionHover',
+      panelHeight     : $("body").height() - 20,
+      speed           : 300
+    }
+  );
+  console.log("4");
+});
+
+function loadFeelings() {
+  // set the current feeling back to the start
+  current = 0;
+
+  // remove current feelings
+  $("#list").html("");
+
+  // hide the status div
+  setStatus("");
+
+  loadingOn();
+
+  // fetch and display new data
+  _IG_FetchXmlContent(options.getUrl(),
+                      _IG_Callback(xmlToJson,
+                                   function() {
+                                     setTimeout("playPause('play')", 1000);
+                                     //loadingOff();
+                                     nextFeeling();
+                                   }));
+}
+
+function xmlToJson(res) {
+  feelings = [];
+
+  var response = res;
+  if (response == null || typeof(response) != "object" || response.firstChild == null) {
+    alert("No xml data");
+    return;
+  }
+  var c_feel;
+  var feels;
+  // firefox
+  if(response.firstChild && response.firstChild.nodeName == "feelings") {
+    feels = response.firstChild.childNodes;
+  }
+  // opera
+  else if(response.childNodes[2] && response.childNodes[2].nodeName == "feelings") {
+    feels = response.childNodes[2].childNodes;
+  }
+  // ie loads everything into reponse.childNodes[1] instead of response.childNodes[0]?!
+  else if(response.childNodes[1] && response.childNodes[1].nodeName == "feelings") {
+    feels = response.childNodes[1].childNodes;
+  }
+
+  for(var i=0; i<feels.length; i++) {
+    if(feels[i].nodeType != 1)
+      continue;
+    c_feel = {}
+    for(var j=0; j<feels[i].attributes.length; j++) {
+      c_feel[feels[i].attributes[j].nodeName] = feels[i].attributes[j].nodeValue;
+    }
+    feelings.push(c_feel);
+  }
+
+
+  if(feelings.length == 0) {
+    setStatus("No feelings found");
+  }
+
+  if(arguments[1] && typeof arguments[1] == "function")
+    arguments[1]();
+}
+
+function playPause() {
+  var forcePause = arguments[0] && arguments[0].toLowerCase() == "pause" ? true : false;
+  var forcePlay  = arguments[0] && arguments[0].toLowerCase() == "play"  ? true : false;
+
+  var shouldPause = forcePause || !paused;
+  var shouldPlay  = forcePlay  || paused;
+
+//  console.log("forcePause %s forcePlay %s", forcePause, forcePlay);
+//  console.log("shouldPause %s shouldPlay %s", shouldPause, shouldPlay);
+//  console.log("paused %s", paused);
+
+  var play = function() {
+    paused = false;
+    $("#playpause").html("Pause");
+
+    if(!writing)
+      nextFeeling();
+  }
+  var pause = function() {
+    paused = true;
+    $("#playpause").html("Play");
+  }
+  var fn;
+
+  if(forcePause && paused) {
+    fn = function() {};
+  }
+  else if(forcePause && !paused) {
+    fn = pause;
+  }
+  else if(forcePlay && paused) {
+    fn = play;
+  }
+  else if(forcePlay && !paused) {
+    fn = function() {};
+  }
+  else if(paused) {
+    fn = play;
+  }
+  else if(!paused) {
+    fn = pause;
+  }
+
+  fn();
+}
+
+function setStatus(str) {
+  var status = $("#status");
+  if(str) {
+    status.html(options.getDesc(str));
+    status.css("display", "block");
+  }
+  else {
+    status.html("");
+    status.css("display", "none");
+  }
+}
+
+
+function nextFeeling() {
+  if(current + 1 <= feelings.length) {
+    addFeeling(current);
+    current++;
+    return true;
+  }
+
+  setStatus("No more feelings");
+  return false;
+}
+
+function addFeeling(curr) {
+  var feeling      = feelings[curr];
+  var feeling_text = feeling.sentence;
+
+  // highlight the feeling in the sentence
+  if(feeling.feeling) {
+    var re = new RegExp("("+feeling.feeling+")", "gi");
+    var style;
+    if(cyc[feeling.feeling])
+      style = "color:#" + cyc[feeling.feeling].c + ";";
+    else
+      style = "font-weight:bold;";
+
+    feeling_text = feeling_text.replace(re, "<span style='"+style+"'>$1</span>");
+  }
+
+  var feeling_meta = getMetaInfo(curr);
+
+  var list       = $("#list").get(0);
+
+  var item       = document.createElement("li");
+  item.id        = "item"+curr;
+  item.className = "item";
+  var text       = document.createElement("a");
+  text.target    = "_blank";
+  text.href      = feeling.posturl;
+  text.id        = "text"+curr;
+  text.className = "text";
+  text.innerHTML = "&nbsp;"; //feeling_text;
+  text.onmouseover = function() { this.style.color = "#CE2457"; }
+  text.onmouseout  = function() { this.style.color = "#FFFFFF"; }
+  var meta       = document.createElement("div")
+  meta.id        = "meta"+curr;
+  meta.className = "meta";
+  meta.innerHTML = "&nbsp;"; //feeling_meta;
+
+  //
+  // use a canvas to draw the color-coded dots
+  //
+  var canvas          = document.createElement("canvas");
+  canvas.id           = "canvas"+curr;
+  canvas.height       = 8;
+  canvas.width        = 8;
+
+  // pack the canvas in a div to be floated away
+  var canvasDiv = document.createElement("div");
+  canvasDiv.id  = "canvasDiv"+curr;
+  canvasDiv.className = "dot";
+  canvasDiv.appendChild(canvas);
+
+  // add the canvas to the DOM before drawing and call some VML voodoo thanks to IE
+  item.appendChild(canvasDiv);
+  if(typeof G_vmlCanvasManager != "undefined") {
+    G_vmlCanvasManager.initElement(canvas);
+    //canvas = item.firstChild.firstChild;
+    canvas = item.getElementsByTagName("canvas")[0];
+  }
+
+  item.onmouseover = function() {
+    if(canvas.getContext) {
+      var ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, 8, 8);
+      ctx.beginPath();
+      ctx.arc(4, 4, 3, 0, Math.PI*2, false);
+      ctx.fillStyle = "#FFFFFF";
+      if(feeling.feeling && cyc[feeling.feeling]) {
+        ctx.fillStyle = "#" + cyc[feeling.feeling].c;
+      }
+      ctx.fill();
+    }
+  }
+  item.onmouseout = function() {
+    if(canvas.getContext) {
+      var ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, 8, 8);
+      ctx.beginPath();
+      ctx.arc(4, 4, 2, 0, Math.PI*2, false);
+      ctx.fillStyle = "#FFFFFF";
+      if(feeling.feeling && cyc[feeling.feeling]) {
+        ctx.fillStyle = "#" + cyc[feeling.feeling].c;
+      }
+      ctx.fill();
+    }
+  }
+  if(canvas.getContext) {
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, 8, 8);
+    ctx.beginPath();
+    ctx.arc(4, 4, 2, 0, Math.PI*2, false);
+    ctx.fillStyle = "#FFFFFF";
+    if(feeling.feeling && cyc[feeling.feeling]) {
+      ctx.fillStyle = "#" + cyc[feeling.feeling].c;
+    }
+    ctx.fill();
+  }
+
+  item.appendChild(text);
+  item.appendChild(meta);
+  list.appendChild(item);
+  list.insertBefore(item, list.firstChild);
+
+  writing = true;
+  writeText(
+    text,
+    feeling_text,
+    0,
+    function() {
+      $(meta).hide().html(feeling_meta);
+      $(meta).animate({opacity:'show'},
+                      function() {
+                        writing = false;
+                        if(!paused)
+                          nextFeeling();
+                      });
+    }
+  );
+}
+
+function writeText(obj, text, idx, fn) {
+  if(idx <= text.length) {
+    var cut1 = idx;
+    var cut2 = idx + 2;
+    var pos = text.substring(cut1, cut2).indexOf("<");
+
+    if(pos != -1) {
+      cut2 = idx + text.substring(cut1).indexOf(">");
+    }
+
+    obj.innerHTML = text.substring(0, cut2);
+    var func = function() { writeText(obj, text, cut2+1, fn); };
+    setTimeout(func, 75);
+  }
+  else if(idx > text.length) {
+    if(fn) { setTimeout(function() {fn();}, 500); }
+  }
+}
+
+function getMetaInfo(idx) {
+  var str     = "";
+  var feeling = feelings[idx];
+  var nowTs   = new Date();
+  var postTs  = new Date(feeling.posttime*1000);
+
+  str += formatTime(nowTs - postTs);
+  str += " / from ";
+  str += feeling.born ? "a " + (nowTs.getFullYear() - feeling.born) + " year old " : "someone ";
+  str += feeling.gender ? genders[feeling.gender].toLowerCase() + " " : "";
+  str += feeling.city || feeling.state || feeling.country ? "in " : "";
+  str += feeling.city ? feeling.city + " " : "";
+  str += feeling.state ? feeling.state + " " : "";
+  str += feeling.country ? feeling.country + " " : "";
+  str += feeling.conditions ? "when it was " + conditions[feeling.conditions].toLowerCase() : "";
+
+  return str;
+}
+
+function formatTime(diff) {
+  diff = diff / 1000;
+
+  if(diff < 60)
+    return Math.floor(diff) + " seconds ago";
+  else if(diff < 60 * 2)
+    return Math.floor(diff / 60) + " minute ago";
+  else if(diff < 60 * 60)
+    return Math.floor(diff / 60 ) + " minutes ago";
+  else if(diff < 60 * 60 * 2)
+    return Math.floor(diff / 60 / 60) + " hours ago";
+  else if(diff < 60 * 60 * 24)
+    return Math.floor(diff / 60 / 60) + " hours ago"
+  else if(diff < 60 * 60 * 24 * 2)
+    return Math.floor(diff / 60 / 60 / 24) + " day ago"
+  else if(diff >= 60 * 60 * 24 * 2)
+   return Math.floor(diff / 60 / 60 / 24) + " days ago"
+  else
+    return Math.floor(diff) +  " seconds ago";
+}
+
+var lastAge, lastGender, lastWeather, lastFeeling;
+function setOption() {
+  var settings = arguments[0];
+  // elm, label, val
+
+  if(settings.label == "age") {
+    $("#label3").html(settings.display || settings.val);
+
+    if(lastAge)
+      $(lastAge).removeClass("ageboxSelected");
+
+    if(settings.elm) {
+      $(settings.elm).addClass("ageboxSelected");
+      lastAge = settings.elm;
+      options.data["agerange"] = settings.val;
+    }
+    else {
+      options.data["agerange"] = "";
+    }
+  }
+  else if(settings.label == "gender") {
+    $("#label2").html(settings.display || settings.val);
+
+    if(lastGender) {
+      $(lastGender).removeClass(lastGender.id+"On").addClass(lastGender.id+"Off");
+    }
+
+    options.data["gender"] = settings.val;
+
+    if(settings.elm) {
+      settings.elm.removeClass(settings.elm.id+"Off").addClass(settings.elm.id+"On");
+      lastGender = settings.elm;
+    }
+    else {
+      if(lastGender) {
+        $(lastGender).removeClass(lastGender.id+"On").addClass(lastGender.id+"Off");
+      }
+      options.data["gender"] = "";
+    }
+  }
+  else if(settings.label == "weather") {
+    $("#label4").html(settings.display || settings.val);
+
+    if(lastWeather) {
+      $(lastWeather).removeClass(lastWeather.id+"On").addClass(lastWeather.id+"Off");
+    }
+
+    if(settings.elm) {
+      $(settings.elm).removeClass(settings.elm.id+"Off").addClass(settings.elm.id+"On");
+      lastWeather = settings.elm;
+      options.data["conditions"] = settings.val;
+    }
+    else {
+      if(lastWeather) {
+        $(lastWeather).removeClass(lastWeather.id+"On").addClass(lastWeather.id+"Off");
+      }
+      options.data["conditions"] = "";
+    }
+  }
+  else if(settings.label == "feeling") {
+    $("#label1").html(settings.display || settings.val);
+
+    if(lastFeeling) {
+      $(lastFeeling).removeClass("optionFeelingOn").addClass("optionFeelingOff");
+    }
+
+    if(settings.elm) {
+      $(settings.elm).removeClass(settings.elm.id+"Off").addClass(settings.elm.id+"On");
+      lastFeeling = settings.elm;
+      options.data["feeling"] = settings.val;
+    }
+    else {
+      if(lastFeeling) {
+        $(lastFeeling).removeClass("optionFeelingOn").addClass("optionFeelingOff");
+      }
+      options.data["feeling"] = "";
+    }
+  }
+  else if(settings.label == "date") {
+    $("#label6").html(settings.display || settings.val);
+    options.data["postyear"] = "";
+    options.data["postmonth"] = "";
+    options.data["postdate"] = "";
+
+    // unhighlight previous year
+    if(lastYear) {
+      $(lastYear).removeClass("listOn").addClass("listOff");
+    }
+    // unhighlight previous month
+    if(lastMonth) {
+      $(lastMonth).removeClass("listOn").addClass("listOff");
+    }
+    // unhighlight previous date
+    if(lastDate) {
+      $(lastDate).removeClass("listOn").addClass("listOff");
+    }
+
+    $("#listDates").css("display", "none");
+    $("#listMonths").css("display", "none");
+
+  }
+}
+
+var lastYear, lastMonth, lastDate;
+function clickYear(elm) {
+  var dates = $("#listDates");
+  var months = $("#listMonths");
+
+  // unhighlight previous year
+  if(lastYear) {
+    $(lastYear).removeClass("listOn").addClass("listOff");
+  }
+
+  // highlight current year
+  if(elm) {
+    $(elm).removeClass("listOff").addClass("listOn");
+  }
+  else {
+    $(elm).removeClass("listOn").addClass("listOff");
+  }
+
+  // hide and show layers
+  dates.css("display", "none");
+  months.css("display", "block");
+
+  // modify the data struct with the new date
+  options.data["postyear"] = $(elm).html();
+  options.data["postmonth"] = "";
+  options.data["postdate"] = "";
+
+  // repopulate months
+  var html = "";
+  var endMonth;
+
+  if(isCurrentYear(options.data["postyear"]))
+    endMonth = new Date().getMonth()+1;
+  else
+    endMonth = 12;
+
+  for(var j=0; j<endMonth; j++) {
+    html += "<li class='listOff' onclick='clickMonth(this, "+j+");'>" + monthNamesShort[j] + "</li>";
+  }
+  $("#listMonths").html(html);
+
+
+  // set new lastYear
+  lastYear = elm;
+
+  // set label
+  $("#label6").html(options.data["postyear"]);
+}
+
+function clickMonth(elm, idx) {
+  var dates = $("#listDates");
+  var months = $("#listMonths");
+
+  // unhighlight previous month
+  if(lastMonth) {
+    $(lastMonth).removeClass("listOn").addClass("listOff");
+  }
+
+  // highlight current month
+  if(elm) {
+    $(elm).removeClass("listOff").addClass("listOn");
+  }
+  else {
+    $(elm).removeClass("listOn").addClass("listOff");
+  }
+
+  // hide and show layers
+  dates.css("display", "block");
+
+  // modify the data struct with the new date
+  options.data["postmonth"] = idx;
+  options.data["postdate"] = "";
+
+  // repopulate dates
+  var html = "";
+  var endDate;
+  // days in month
+  var days = daysInMonth(options.data["postyear"], options.data["postmonth"]+1);
+  // number of columns to list dates in
+  var cols = Math.floor(days / 12);
+
+  if(isCurrentMonth(options.data["postyear"], options.data["postmonth"]))
+    endDate = new Date().getDate();
+  else
+    endDate = days;
+
+  for(var i=1; i<=endDate; i++) {
+    html += "<li class='listOff' onclick='clickDate(this, "+i+");'>" + i + "</li>";
+  }
+  $("#listDates").html(html);
+
+  // set new lastMonth
+  lastMonth = elm;
+
+  // set label
+  $("#label6").innerHTML = monthNamesShort[options.data["postmonth"]] + " " + options.data["postyear"];
+}
+
+function clickDate(elm, idx) {
+  // unhighlight previous date
+  if(lastDate) {
+    $(lastDate).removeClass("listOn").addClass("listOff");
+  }
+
+  // highlight current date
+  if(elm) {
+    $(elm).removeClass("listOff").addClass("listOn");
+  }
+  else {
+    $(elm).removeClass("listOn").addClass("listOff");
+  }
+
+  // modify the data struct with the new date
+  options.data["postdate"] = idx;
+
+  // set new lastDate
+  lastDate = elm;
+
+  // set label
+  $("#label6").html(monthNamesShort[options.data["postmonth"]] + " " + options.data["postdate"] + " " + options.data["postyear"]);
+}
+
+function datePad(num) {
+  if(num > 0 && num < 10)
+    return "0" + num;
+  return num;
+}
+
+function listYears() {
+  var startYear = 2005;
+  var endYear = new Date().getFullYear();
+  var html = "";
+  for(var i=startYear; i<=endYear; i++) {
+    html += "<li class='listOff' onclick='clickYear(this);'>" + i + "</li>";
+  }
+  $("#listYears").html(html);
+}
+
+function isCurrentMonth(year, month) {
+  var date = new Date(year, month, 1);
+  var now = new Date();
+  return isCurrentYear(year) && now.getMonth() == date.getMonth();
+}
+function isCurrentYear(year) {
+  var date = new Date(year, 0, 1);
+  var now = new Date();
+  return now.getFullYear() == date.getFullYear();
+}
+
+function setOptionFeeling(elm) {
+  var feeling = elm.id.substring(elm.id.indexOf(sep)+1);
+  setOption({elm:elm, label:"feeling", val:feeling});
+}
+
+function toggleOptions() {
+  var accordion = $("#accordion");
+  var find      = $("#find");
+  var data      = $("#data");
+  var playpause = typeof arguments[0] != "undefined" ? arguments[0] : true;
+
+
+  if(!data.css("display") || data.css("display") == "block") {
+
+    if(playpause) {
+      playPause("pause");
+    }
+    data.css("display", "none");
+    accordion.css("display", "block");
+    find.css("display", "block");
+
+    $("#edit").html("Cancel");
+    $("#playpause").html("");
+  }
+  else {
+
+    if(playpause) {
+      playPause("play");
+    }
+    data.css("display", "block");
+    accordion.css("display", "none");
+    find.css("display", "none");
+
+    $("#edit").html("Feelings");
+  }
+}
+
+var lastLetter;
+function letterFeelings(elm) {
+  var letter;
+  if(typeof elm == "object")
+    letter = elm.id.charAt(elm.id.length-1);
+  else {
+    letter = elm;
+    elm = _gel("optionLetter"+letter);
+  }
+
+  if(lastLetter) {
+    $(lastLetter).removeClass("optionLetterOn").addClass("optionLetterOff");
+  }
+  $(elm).removeClass("optionLetterOff").addClass("optionLetterOn");
+
+  lastLetter = elm;
+
+  var feelings = cyc.getFeelingsByLetter(letter);
+  var html     = "";
+
+  for(var i=0; i<feelings.length; i++) {
+    html += "<div class='optionFeelingOff' id='optionFeeling"+sep+feelings[i].f+"' onclick='setOptionFeeling(this);'>" + feelings[i].f + "</div>";
+  }
+  $("#feelingList").html(html);
+}
+
+function loadingOn() {
+
+}
+
+
+// old stuff
+function getCharacterHeight() {
+  return document.getElementById("cloak").clientHeight;
+}
+
+function getCharacterWidth() {
+  return document.getElementById("cloak").clientWidth / document.getElementById("cloak").innerHTML.length;
+}
+
+function getNumLines(str) {
+  return Math.ceil((str.length * getCharacterWidth()) / document.getElementsByTagName("body")[0].clientWidth);
+}
+
+function getBlockHeight(str) {
+  return getCharacterHeight() * getNumLines(str);
+}
+
+</script>
+
+<div id="controls">
+  <div id="playpause" onclick="playPause.call(window); return false;">Pause</div>
+  <div id="edit" onclick="toggleOptions(); return false;">Feelings</div>
+</div>
+
+<dl id="accordion">
+  <dt>
+    <span class="a-m-t-first">Feeling</span>
+    <span class="a-m-t-second" id="label1">All</span>
+  </dt>
+  <dd><div class="bd" id="pocket1">
+    <div class="allbox" onclick="setOption({label:'feeling', val:'All'});">All Feelings</div>
+    <div id="letterList">
+      <script type="text/javascript">
+        for(var i=65; i<=90; i++) {
+          var l = String.fromCharCode(i);
+          document.writeln("<div class='optionLetterOff' id='optionLetter"+l+"' onclick='letterFeelings(this);'>"+l+"</div>");
+        }
+        init_funcs.push(function() { letterFeelings("A"); });
+      </script>
+      <div class="hack"></div>
+    </div>
+    <div id="feelingList"></div>
+  </div></dd>
+
+  <dt>
+    <span class="a-m-t-first">Gender</span>
+    <span class="a-m-t-second" id="label2">Both</span>
+  </dt>
+  <dd><div class="bd" id="pocket2">
+    <div class="allbox" onclick="setOption({label:'gender', val:-1, display:'Both'});">Both Genders</div>
+    <div id="gender_female" class="gender_femaleOff" onclick="setOption({elm:this, label:'gender', val:0, display:'Female'});"></div>
+    <div id="gender_male"   class="gender_maleOff"   onclick="setOption({elm:this, label:'gender', val:1, display:'Male'});"  ></div>
+    <div class="hack"></div>
+  </div></dd>
+
+  <dt>
+    <span class="a-m-t-first">Age</span>
+    <span class="a-m-t-second" id="label3">All</span>
+  </dt>
+  <dd><div class="bd" id="pocket3">
+    <div class="allbox" onclick="setOption({label:'age', val:'All'});">All Ages</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'10 - 19'});">10s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'20 - 29'});">20s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'30 - 39'});">30s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'40 - 49'});">40s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'50 - 59'});">50s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'60 - 69'});">60s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'70 - 79'});">70s</div>
+    <div class="agebox" onclick="setOption({elm:this, label:'age', val:'80 - 89'});">80s</div>
+    <div class="hack"></div>
+  </div></dd>
+
+  <dt>
+    <span class="a-m-t-first">Weather</span>
+    <span class="a-m-t-second" id="label4">All</span>
+  </dt>
+  <dd><div class="bd" id="pocket4">
+    <div class="allbox" onclick="setOption({label:'weather', val:'All'});">All Weather</div>
+    <div id="weather_sunny"  class="weather_sunnyOff"  onclick="setOption({elm:this, label:'weather', val:1, display:'Sunny'});" ></div>
+    <div id="weather_clowdy" class="weather_clowdyOff" onclick="setOption({elm:this, label:'weather', val:4, display:'Cloudy'});"></div>
+    <div class="hack"></div>
+    <div id="weather_rainy"  class="weather_rainyOff"  onclick="setOption({elm:this, label:'weather', val:2, display:'Rainy'});" ></div>
+    <div id="weather_snowy"  class="weather_snowyOff"  onclick="setOption({elm:this, label:'weather', val:3, display:'Snowy'});" ></div>
+    <div class="hack"></div>
+  </div></dd>
+
+  <dt>
+    <span class="a-m-t-first">Location</span>
+    <span class="a-m-t-second" id="label5">California</span>
+  </dt>
+  <dd><div class="bd fat" id="pocket5">California</div></dd>
+
+  <dt>
+    <span class="a-m-t-first">Date</span>
+    <span class="a-m-t-second" id="label6">All</span>
+  </dt>
+  <dd style="margin-bottom:50px;"><div class="bd" id="pocket6">
+    <div class="allbox" onclick="setOption({label:'date', val:'All'});">All Dates</div>
+    <ul class="barelist fat" id="listYears">
+      <script type="text/javascript">
+        init_funcs.push(listYears);
+      </script>
+    </ul>
+    <ul class="barelist fat" id="listMonths"></ul>
+    <ul class="barelist fat" id="listDates"></ul>
+    <div class="hack"></div>
+  </div></dd>
+</dl>
+
+<div id="data">
+  <div id="status"></div>
+  <ul id="list"></ul>
+</div>
+
+<div id="find" onclick="loadFeelings(); toggleOptions(false);">Find Feelings</div>
+
+
+]]>
+</Content>
+</Module>

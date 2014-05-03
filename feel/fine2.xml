@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+<ModulePrefs
+    author="Justin McConnell"
+    author_email="boolean@gmail.com"
+    title="We Feel Fine"
+    title_url="http://www.wefeelfine.org/"
+    scrolling="true"
+    scaling="true"
+    height="300" />
+
+<Content type="html">
+<![CDATA[
+
+<style type="text/css">
+body {
+  font-size: 72.5%;
+  font-family: Tahoma, Helvetica, Verdana, sans-serif;
+  color: #FFFFFF;
+  background: #191919;
+}
+a, a:link {
+  display: block;
+  color: #FFFFFF;
+  text-decoration: none;
+}
+a:visited {
+  color: #FFFFFF;
+}
+a:hover {
+  color: #F42764;
+}
+a:active {
+  color: #FFFFFF;
+}
+#data {
+  margin: 5px 0 0 0;
+}
+#list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+#list li {
+  margin-left: 10px;
+  clear: both;
+}
+#status {
+  color: #F02662;
+  padding: 12px 0 12px 2em;
+  display: none;
+}
+#controls {
+  height: 20px;
+  line-height: 20px;
+  padding: 0;
+  margin: 0;
+  background: #451C28;
+  color: #FFFFFF;
+}
+#playpause {
+  outline: none;
+  float: left;
+  padding: 0 0 0 3px;
+}
+#linkback {
+  float: right;
+  padding: 0 3px 0 0;
+}
+#edit {
+  float: right;
+  padding: 3px 3px 0 9px;
+}
+
+a:hover .icon {
+  background: #F42764;
+}
+.icon {
+  background: #FFFFFF;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
+  margin-top: -2px;
+}
+.barelist {
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+.feeling {
+  float: right;
+  padding-bottom: 15px;
+  padding-right: 10px;
+  width: 89%;
+}
+.text {
+  font-size: 1.15em;
+  line-height: 1.15em;
+  margin-bottom: 5px;
+}
+.meta {
+  color: #808080;
+  font-size: .95em;
+}
+.dot {
+  float: left;
+  width: 6%;
+  height: 8px;
+  margin-top: .35em;
+}
+.fat {
+  padding: 3px;
+}
+.hack {
+  clear: both;
+}
+</style>
+
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/cyc.js"></script>
+
+<!--[if IE]>
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/feel/excanvas.js"></script>
+<![endif]-->
+
+<script type="text/javascript">
+/**
+ * Todo
+ *  - Re-implement vertical list animation.  This looks better but also is a usability
+ *    issue because the lower posts are stationary as the current one scrolls horizontally.
+ */
+
+/**
+ * feelings - An array of objects, each object representing a feeling from a single blog post.
+ * [
+ *   { born     : "1942",
+ *     city     : "Oxford",
+ *     country  : "United Kingdom",
+ *     feeling  : "smart",
+ *     gender   : "0",
+ *     lat      : "51.752434",
+ *     lon      : "-1.2558",
+ *     postdate : "2007-01-07",
+ *     posttime : "1168330660578",
+ *     sentance : "I feel smart",
+ *     state    : ""
+ *   },
+ *   ...
+ * ]
+ **/
+var feelings = [];
+
+var options  = {
+  data : {
+    display      : "xml",
+    returnfields : "feeling,sentence,posttime,postdate,posturl,gender,born,country,state,city,lat,lon,conditions",
+    feeling      : "",
+    gender       : -1,
+    agerange     : "",
+    conditions   : "",
+    country      : "",
+    state        : "",
+    city         : "",
+    postyear     : "",
+    postmonth    : "", //(Math.floor(Math.random()*12)+1),
+    postdate     : "",
+    limit        : 100
+  },
+
+  getUrl : function() {
+    var url = "http://api.wefeelfine.org:8080/ShowFeelings?encode=1&"+
+      (this.data.display       ? "&display="      + this.data.display       : "")+
+      (this.data.returnfields  ? "&returnfields=" + this.data.returnfields  : "")+
+      (this.data.feeling       ? "&feeling="      + this.data.feeling       : "")+
+      (this.data.gender >= 0   ? "&gender="       + this.data.gender        : "")+
+      (this.data.agerange      ? "&agerange="     + this.data.agerange      : "")+
+      (this.data.conditions    ? "&conditions="   + this.data.conditions    : "")+
+      (this.data.country       ? "&country="      + this.data.country       : "")+
+      (this.data.state         ? "&state="        + this.data.state         : "")+
+      (this.data.city          ? "&city="         + this.data.city          : "")+
+      (this.data.limit         ? "&limit="        + this.data.limit         : "");
+
+    if (this.data.postdate) {
+      url += "&postdate=" + this.data.postyear +"-"+ datePad(this.data.postmonth+1) +"-"+ datePad(this.data.postdate);
+    }
+    else {
+      if (this.data.postyear) {
+        url += "&postyear=" + this.data.postyear;
+      }
+      if (this.data.postmonth || (typeof this.data.postmonth == "number" && this.data.postmonth === 0)) {
+        url += "&postmonth=" + datePad(this.data.postmonth+1);
+      }
+    }
+
+    return url;
+  },
+
+  // No feelings found from [gender] aged [age range] who feel [feeling] on Jan 15, 2007 when it's [conditions]
+  // No feelings found from [gender] aged [age range] who feel [feeling] in Jan 2007 when it's [conditions]
+  // No feelings found from [gender] aged [age range] who feel [feeling] in 2007 when it's [conditions] in [location]
+  // No more feelings ""
+
+  getDesc : function() {
+    var prefix = arguments[0] || "";
+    var suffix = arguments[1] || "";
+    var str    = "";
+
+    str += prefix + " from ";
+
+    if (this.data.gender >= 0) {
+      str += genders[this.data.gender].toLowerCase() + "s ";
+    } else {
+      str += "people ";
+    }
+
+    if (this.data.agerange) {
+      str += "aged " + this.data.agerange + " ";
+    }
+
+    if (this.data.feeling) {
+      str += "who feel " + this.data.feeling + " ";
+    }
+
+    if (this.data.postdate) {
+      str += "on " + monthNamesShort[this.data.postmonth] + " " + this.data.postdate + ", " + this.data.postyear + " ";
+    } else {
+      if ((this.data.postmonth || (this.data.postmonth === 0 && this.data.postmonth !== "")) && this.data.postyear) {
+        str += "in " + monthNamesShort[this.data.postmonth] + " " + this.data.postyear + " ";
+      } else if (this.data.postyear) {
+        str += "in " + this.data.postyear + " ";
+      }
+    }
+
+    if (this.data.conditions) {
+      str += "when its " + conditions[this.data.conditions].toLowerCase() + " ";
+    }
+
+    if (this.data.city || this.data.state || this.data.country) {
+      str += "in ";
+    }
+    if (this.data.city) {
+      str += this.data.city + " ";
+    }
+    if (this.data.state) {
+      str += this.data.state + " ";
+    }
+    if (this.data.country) {
+      str += this.data.country + " ";
+    }
+    str += suffix;
+
+    return str;
+  }
+};
+
+var current  = 0;
+
+var paused   = false;
+
+var writing  = false;
+
+var baseImg  = "http://www.talisweb.com/justin/gmodules/feel/";
+
+var sep      = "|";
+
+window.onload = function() {
+  loadFeelings();
+};
+
+function loadFeelings() {
+  // set the current feeling back to the start
+  current = 0;
+
+  // remove current feelings
+  _gel("list").innerHTML = "";
+
+  // hide the status div
+  setStatus("");
+
+  // fetch and display new data
+  _IG_FetchXmlContent(options.getUrl(),
+                      _IG_Callback(xmlToJson,
+                                   function() {
+                                     setTimeout(function() {playPause("play");}, 1000);
+                                     //loadingOff();
+                                     nextFeeling();
+                                   }));
+}
+
+function xmlToJson(res) {
+  feelings = [];
+
+  var response = res;
+  if (response === null || typeof(response) != "object" || response.firstChild === null) {
+    alert("No xml data");
+    return;
+  }
+  var c_feel;
+  var feels;
+  // firefox
+  if (response.firstChild && response.firstChild.nodeName == "feelings") {
+    feels = response.firstChild.childNodes;
+  }
+  // opera
+  else if (response.childNodes[2] && response.childNodes[2].nodeName == "feelings") {
+    feels = response.childNodes[2].childNodes;
+  }
+  // ie loads everything into reponse.childNodes[1] instead of response.childNodes[0]?!
+  else if (response.childNodes[1] && response.childNodes[1].nodeName == "feelings") {
+    feels = response.childNodes[1].childNodes;
+  }
+
+  for (var i=0; i<feels.length; i++) {
+    if (feels[i].nodeType != 1) {
+      continue;
+    }
+    c_feel = {};
+    for (var j=0; j<feels[i].attributes.length; j++) {
+      c_feel[feels[i].attributes[j].nodeName] = feels[i].attributes[j].nodeValue;
+    }
+    feelings.push(c_feel);
+  }
+
+
+  if (feelings.length === 0) {
+    setStatus("No feelings found");
+  }
+
+  if (arguments[1] && typeof arguments[1] == "function") {
+    arguments[1]();
+  }
+}
+
+function playPause() {
+  var forcePause = arguments[0] && arguments[0].toLowerCase() == "pause" ? true : false;
+  var forcePlay  = arguments[0] && arguments[0].toLowerCase() == "play"  ? true : false;
+
+  var shouldPause = forcePause || !paused;
+  var shouldPlay  = forcePlay  || paused;
+
+  var play = function() {
+    paused = false;
+    var pp = _gel("playpause");
+    pp.innerHTML = '<img class="icon" src="http://www.talisweb.com/justin/gmodules/feel/pause.gif" alt="Pause">Pause';
+    pp.title = "Pause";
+
+    if (!writing) {
+      nextFeeling();
+    }
+  };
+  var pause = function() {
+    paused = true;
+    var pp = _gel("playpause");
+    pp.innerHTML = '<img class="icon" src="http://www.talisweb.com/justin/gmodules/feel/play.gif" alt="Play">Play';
+    pp.title = "Pause";
+  };
+  
+  var fn;
+  if (forcePause && paused) {
+    fn = function() {};
+  }
+  else if (forcePause && !paused) {
+    fn = pause;
+  }
+  else if (forcePlay && paused) {
+    fn = play;
+  }
+  else if (forcePlay && !paused) {
+    fn = function() {};
+  }
+  else if (paused) {
+    fn = play;
+  }
+  else if (!paused) {
+    fn = pause;
+  }
+
+  fn();
+}
+
+function setStatus(str) {
+  var status = _gel("status");
+  if (str) {
+    status.innerHTML = options.getDesc(str);
+    status.style.display = "block";
+  }
+  else {
+    status.innerHTML = "";
+    status.style.display = "none";
+  }
+}
+
+function nextFeeling() {
+  if (current + 1 <= feelings.length) {
+    addFeeling(current);
+    current++;
+    return true;
+  }
+
+  setStatus("No more feelings");
+  return false;
+}
+
+function addFeeling(curr) {
+  var feeling      = feelings[curr];
+  var feeling_text = feeling.sentence;
+
+  // highlight the feeling in the sentence
+  if (feeling.feeling) {
+    var re = new RegExp("("+feeling.feeling+")", "gi");
+    var style;
+    if (cyc[feeling.feeling]) {
+      style = "color:#" + cyc[feeling.feeling].c + ";";
+    } else {
+      style = "font-weight:bold;";
+    }
+    
+    feeling_text = feeling_text.replace(re, "<span style='"+style+"'>$1</span>");
+  }
+
+  var feeling_meta = getMetaInfo(curr);
+  var list       = _gel("list");;
+  var item       = document.createElement("li");
+  item.id        = "item"+curr;
+  item.className = "item";
+  var text       = document.createElement("a");
+  text.target    = "_blank";
+  text.href      = feeling.posturl;
+  text.id        = "text"+curr;
+  text.className = "text";
+  text.innerHTML = "&nbsp;"; //feeling_text;
+  text.onmouseover = function() { this.style.color = "#CE2457"; };
+  text.onmouseout  = function() { this.style.color = ""; };
+  var meta       = document.createElement("div");
+  meta.id        = "meta"+curr;
+  meta.className = "meta";
+  meta.style.visibility = "hidden";
+  meta.innerHTML = "&nbsp;"; //feeling_meta;
+  
+  var feelingDiv = document.createElement("div");
+  feelingDiv.className = "feeling";
+  feelingDiv.id = "feeling" + curr;
+  feelingDiv.appendChild(text);
+  feelingDiv.appendChild(meta);
+
+  //
+  // use a canvas to draw the color-coded dots
+  //
+  var canvas          = document.createElement("canvas");
+  canvas.id           = "canvas"+curr;
+  canvas.height       = 8;
+  canvas.width        = 8;
+
+  // pack the canvas in a div to be floated away
+  var canvasDiv = document.createElement("div");
+  canvasDiv.id  = "canvasDiv"+curr;
+  canvasDiv.className = "dot";
+  canvasDiv.appendChild(canvas);
+
+  // add the canvas to the DOM before drawing and call some VML voodoo thanks to IE
+  item.appendChild(canvasDiv);
+  if (typeof G_vmlCanvasManager != "undefined") {
+    G_vmlCanvasManager.initElement(canvas);
+    //canvas = item.firstChild.firstChild;
+    canvas = item.getElementsByTagName("canvas")[0];
+  }
+
+  item.onmouseover = function() {
+    if (canvas.getContext) {
+      var ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, 8, 8);
+      ctx.beginPath();
+      ctx.arc(4, 4, 3, 0, Math.PI*2, false);
+      ctx.fillStyle = "#FFFFFF";
+      if (feeling.feeling && cyc[feeling.feeling]) {
+        ctx.fillStyle = "#" + cyc[feeling.feeling].c;
+      }
+      ctx.fill();
+    }
+  };
+  item.onmouseout = function() {
+    if (canvas.getContext) {
+      var ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, 8, 8);
+      ctx.beginPath();
+      ctx.arc(4, 4, 2, 0, Math.PI*2, false);
+      ctx.fillStyle = "#FFFFFF";
+      if (feeling.feeling && cyc[feeling.feeling]) {
+        ctx.fillStyle = "#" + cyc[feeling.feeling].c;
+      }
+      ctx.fill();
+    }
+  };
+  if (canvas.getContext) {
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, 8, 8);
+    ctx.beginPath();
+    ctx.arc(4, 4, 2, 0, Math.PI*2, false);
+    ctx.fillStyle = "#FFFFFF";
+    if (feeling.feeling && cyc[feeling.feeling]) {
+      ctx.fillStyle = "#" + cyc[feeling.feeling].c;
+    }
+    ctx.fill();
+  }
+
+  item.appendChild(feelingDiv);
+  list.appendChild(item);
+  list.insertBefore(item, list.firstChild);
+
+  writing = true;
+  writeText(
+    text,
+    feeling_text,
+    0,
+    function() {
+      meta.innerHTML = feeling_meta;
+      setOpacity(meta, 0);
+      meta.style.visibility = "visible";
+      fadeIn(meta,
+             function() {
+               writing = false;
+               if (!paused) {
+                 nextFeeling();
+               }
+             }
+      );
+    }
+  );
+}
+
+function setOpacity(el, o) {
+  if (!el || o < 0 || o > 1) {
+    return;
+  }
+  if (typeof el.style.filter !== "undefined") {
+    el.style.filter = "alpha(opacity=" + Math.round(o * 100) + ")";
+  } else {
+    el.style.opacity = o;
+  }
+}
+
+function fadeIn(el, callback) {
+  var o = 0;
+  function f() {
+    setOpacity(el, o);
+    o += .1;
+    if (o < 1.0) {
+      setTimeout(f, 40);
+    } else if (typeof callback === "function") {
+      callback();
+    }
+  }
+  f();
+}
+
+function writeText(obj, text, idx, fn) {
+  if (idx <= text.length) {
+    var cut1 = idx;
+    var cut2 = idx;
+    var pos = text.substring(cut1, cut2 + 1).indexOf("<");
+    if (pos != -1) {
+      cut2 = idx + text.substring(cut1).indexOf(">")+2;
+    }
+
+    obj.innerHTML = text.substring(0, cut2);
+    var func = function() { writeText(obj, text, cut2+1, fn); };
+    setTimeout(func, 15);
+  }
+  else if (idx > text.length) {
+    if (fn) { setTimeout(function() {fn();}, 50); }
+  }
+}
+
+function getMetaInfo(idx) {
+  var str     = "";
+  var feeling = feelings[idx];
+  var nowTs   = new Date();
+  var postTs  = new Date(feeling.posttime*1000);
+
+  str += formatTime(nowTs - postTs);
+  str += " / from ";
+  str += feeling.born ? "a " + (nowTs.getFullYear() - feeling.born) + " year old " : "someone ";
+  str += feeling.gender ? genders[feeling.gender].toLowerCase() + " " : "";
+  str += feeling.city || feeling.state || feeling.country ? "in " : "";
+  str += feeling.city ? feeling.city + " " : "";
+  str += feeling.state ? feeling.state + " " : "";
+  str += feeling.country ? feeling.country + " " : "";
+  str += feeling.conditions ? "when it was " + conditions[feeling.conditions].toLowerCase() : "";
+
+  return str;
+}
+
+function formatTime(diff) {
+  diff = diff / 1000;
+  
+  if (diff < 60) {
+    return "<1 min ago";
+  } else if (diff < 60 * 2) {
+    return Math.floor(diff / 60) + " min ago";
+  } else if (diff < 60 * 60) {
+    return Math.floor(diff / 60 ) + " mins ago";
+  } else if (diff < 60 * 60 * 2) {
+    return Math.floor(diff / 60 / 60) + " hours ago";
+  } else if (diff < 60 * 60 * 24) {
+    return Math.floor(diff / 60 / 60) + " hours ago";
+  } else if (diff < 60 * 60 * 24 * 2) {
+    return Math.floor(diff / 60 / 60 / 24) + " day ago";
+  } else if (diff >= 60 * 60 * 24 * 2) {
+    return Math.floor(diff / 60 / 60 / 24) + " days ago";
+  } else {
+    return Math.floor(diff) +  " seconds ago";
+  }
+}
+
+function datePad(num) {
+  if (num > 0 && num < 10) {
+    return "0" + num;
+  }
+  return num;
+}
+</script>
+
+<div id="controls">
+  <a id="playpause" href="#" onclick="playPause.call(window); return false;" title="Pause"><img class="icon" src="http://www.talisweb.com/justin/gmodules/feel/pause.gif" alt="Pause">Pause</a>
+  <a id="linkback" href="http://www.wefeelfine.org/mission.html" target="_blank" title="Data by We Feel Fine">We Feel Fine</a>
+</div>
+
+<div id="data">
+  <div id="status"></div>
+  <ul id="list"></ul>
+</div>
+
+]]>
+</Content>
+</Module>
