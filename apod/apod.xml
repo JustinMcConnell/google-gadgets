@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://www.talisweb.com/justin/gmodules/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "Astronomy Picture of the Day"
+  title_url           = "http://antwrp.gsfc.nasa.gov/apod/"
+  description         = "Another Astronomy Picture of the Day viewer."
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_location     = "San Francisco, CA"
+  author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+  author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+  author_link         = "http://www.talisweb.com/justin/"
+  author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+  screenshot          = "http://www.talisweb.com/justin/gmodules/apod/screenshot.png"
+  thumbnail           = "http://www.talisweb.com/justin/gmodules/apod/thumbnail.png"
+  height              = "330"
+  width               = "320"
+  scaling             = "true"
+  scrolling           = "true"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+  <Require feature="tabs"/>
+</ModulePrefs>
+
+<UserPref name="title" display_name="Title" datatype="string" default_value="Astronomy Picture of the Day" />
+<UserPref name="show_title"  display_name="Show Title"       datatype="bool" default_value="true" />
+<!--<UserPref name="show_credit" display_name="Show Copyright"   datatype="bool" default_value="true" />-->
+<UserPref name="show_blurb"  display_name="Show Explanation" datatype="bool" default_value="true" />
+
+<Content type="html">
+<![CDATA[
+
+<style type="text/css">@import url("http://www.talisweb.com/justin/gmodules/apod/calendar-blue.css");</style>
+
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/apod/calendar.js"></script>
+
+<script type="text/javascript">
+
+var apod = {
+  FIRSTAPOD : new Date(1995, 05, 16),
+  baseImg   : "http://www.talisweb.com/justin/gmodules/apod/",
+  baseUrl   : "",
+  today     : null,
+  date      : "",
+  image     : "",
+  title     : "",
+  credit    : "",
+  blurb     : "",
+  loading   : "",
+  prefs     : null,
+
+  init : function() {
+    this.prefs = new _IG_Prefs(__MODULE_ID__);
+    this.date  = new Date();
+    this.today = this.makeMidnight(this.date);
+    this.loadData();
+  },
+
+  loadData : function() {
+    _IG_FetchContent(this.getUrl(true), this.loadDataCallback);
+  },
+
+  // the 'this' object refers to the window object when called by _IG_FetchContent
+  loadDataCallback : function(res) {
+    // get rid of all data we don't want
+    var pos1 = res.toLowerCase().indexOf('<a href="image/');
+    var pos2 = res.toLowerCase().indexOf("tomorrow's picture");
+    res = res.substring(pos1, pos2);
+
+    // remove linebreaks
+    res = res.replace(/\n/g, " ");
+
+    // cut down whitespace
+    res = _trim(res).replace(/\s+/g, " ").replace(/>\s</g, "><");
+
+    // fix relative links
+    res = res.replace(/<img src="image/gi, '<img onload="apod.loadFinished();" id="img" title="Click to show the full size image" src="'+apod.baseUrl+'image');
+    res = res.replace(/(<a href=")(ap)/gi, '$1'+apod.baseUrl+'$2');
+    res = res.replace(/(<a href=")(image\/)/gi, '$1'+apod.baseUrl+'$2');
+    res = res.replace(/<a/gi, '<a target="_blank"');
+
+    // remove all HTML tags except those that contain data or formatting
+    res = apod.removeTag(res, "p");
+    res = apod.removeTag(res, "c");
+
+    // split into 4 parts
+    var parts = res.split(/<b>/);
+    apod.image  = _trim(parts[0]);
+    apod.title  = _trim(apod.removeTag(parts[1], "b"));
+    apod.credit = _trim(apod.removeTag(parts[2], "b"));
+    apod.blurb  = _trim(apod.removeTag(parts[3], "b"));
+
+    apod.render();
+  },
+
+  render : function() {
+    var html = ""+
+      "<div class='common' id='gui'>" +
+        "<div id='divPrev' style='float:left; width:16px; margin-right:5px;'>"+
+        this.getPrevLink()+
+        "</div>"+
+        "<div id='divNext' style='float:left; width:16px; margin-right:5px;'>"+
+        this.getNextLink()+
+        "</div>"+
+        "<div id='date' title='Click to choose the APOD for a specific date'>" +this.dateFormatPrint(this.date)+ "</div></div>"+
+        "<div class='hack'></div>"+
+      "</div>";
+    html += "<div class='common' id='title' style='display: " +(this.prefs.getBool("show_title") ? "block" : "none")+ "'><a href='" +this.getUrl()+ "' target='_blank' title='Click to show the original APOD page'>" + this.title + "</a></div>";
+    html += "<div class='common' id='image'>" + this.image + "</div>";
+    html += "<div class='common' id='credit' style='display: " +(1||this.prefs.getBool("show_credit") ? "block" : "none")+ "'>" + this.credit + "</div>";
+    html += "<div class='common' id='blurb' style='display: " +(this.prefs.getBool("show_blurb") ? "block" : "none")+ "'>" + this.blurb + "</div>";
+
+    _gel("o").innerHTML = html;
+
+    Calendar.setup(
+      {
+        displayArea : "date",             // display date here
+        daFormat    : "%B %e, %Y",        // in this format
+        button      : "date",             // clicking on this div shows the calendar ->
+        onSelect    : apod.calendarClick, // by calling this method
+        disableFunc : apod.calendarCheck  // use this function to filter days without an image
+      }
+    );
+
+  },
+
+  calendarCheck : function(date, year, month, day) {
+    date = apod.makeMidnight(date);
+
+    if(date < apod.FIRSTAPOD)
+      return true;
+
+    if(date - apod.makeMidnight(new Date(1995, 5, 17)) == 0)
+      return true;
+    if(date - apod.makeMidnight(new Date(1995, 5, 18)) == 0)
+      return true;
+    if(date - apod.makeMidnight(new Date(1995, 5, 19)) == 0)
+      return true;
+
+    if(date > apod.makeMidnight(new Date()))
+      return true;
+
+    return false;
+  },
+
+  calendarClick : function(calendar, date) {
+    if(!calendar.dateClicked)
+      return;
+
+    apod.loading = "calendar";
+
+    //apod.setLoading("imgCal");
+    apod.date.setTime(calendar.date.getTime());
+    apod.loadData();
+    calendar.hide();
+  },
+
+  loadFinished : function() {
+    this.loading = "";
+
+    _gel("divPrev").innerHTML = this.getPrevLink();
+    _gel("divNext").innerHTML = this.getNextLink();
+    this.imageWidth  = _gel("img").width;
+    this.imageHeight = _gel("img").height;
+    this.shrinkImages();
+  },
+
+  loadNext : function() {
+    this.loading = "next";
+
+    _gel("img").style.visibility = "hidden";
+
+    this.setLoading("imgNext");
+    this.date.setDate(this.date.getDate()+1);
+    this.loadData();
+  },
+
+  loadPrev : function() {
+    this.loading = "prev";
+
+    _gel("img").style.visibility = "hidden";
+
+    this.setLoading("imgPrev");
+
+    this.date.setDate(this.date.getDate()-1);
+    this.loadData();
+  },
+
+  setLoading : function(objName) {
+    _gel(objName).src        = this.baseImg + "apod_loading.gif";
+    _gel(objName).onmouseout = function() {};
+  },
+
+  getBaseUrl : function() {
+    var urls = [ "http://antwrp.gsfc.nasa.gov/apod/",
+                 "http://www.brera.mi.astro.it/apod/",
+                 "http://www.usenet.net.nz/apod/",
+                 "http://www.sai.msu.su/apod/",
+                 "http://www.star.ucl.ac.uk/~apod/apod/" ];
+    var rand = Math.random();
+    var idx;
+
+    if(rand <= .8)
+      idx = 0;
+    else if(rand <= .85)
+      idx = 1;
+    else if(rand <= .90)
+      idx = 2;
+    else if(rand <= .95)
+      idx = 3;
+    else if(rand <= 1.0)
+      idx = 4;
+
+    //console.log("%f -> %s", rand, urls[idx]);
+    return urls[idx];
+  },
+
+  getUrl : function() {
+    var random = arguments[0] || false;
+    if(random)
+      this.baseUrl = this.getBaseUrl();
+    return this.baseUrl + "ap" + this.dateFormatApod(this.date) + ".html";
+  },
+
+  getPrevLink : function() {
+    // date of the first APOD
+    var first    = apod.FIRSTAPOD;
+
+    var dayMS    = 1000 * 60 * 60 * 24;
+    var prevDay  = new Date();
+    prevDay.setTime(this.date.getTime() - dayMS)
+    var imgTitle = "Click to show the APOD for " + this.dateFormatPrint(prevDay);
+
+    if(this.loading == "prev")
+      return "<img id='imgPrev' src='" + this.baseImg + "apod_loading.gif' width='16' height='16' title='Loading' />";
+    else if(this.date > first)
+      return "<a href='javascript:void(0);' onclick='apod.loadPrev(); return false;'><img id='imgPrev' src='" + this.baseImg + "apod_prev.gif' width='16' height='16' title='" +imgTitle+ "' onmouseover='this.src=\""+this.baseImg+"apod_prev_on.gif\";' onmouseout='this.src=\""+this.baseImg+"apod_prev.gif\";' /></a>";
+    else
+      return "<img id='imgPrev' src='" + this.baseImg + "apod_prev_off.gif' width='16' height='16' title='This is the latest APOD' />";
+  },
+
+  getNextLink : function() {
+    // date of the last APOD
+    var last = this.makeMidnight(new Date());
+
+    var dayMS    = 1000 * 60 * 60 * 24;
+    var nextDay  = new Date();
+    nextDay.setTime(this.date.getTime() + dayMS)
+    var imgTitle = "Click to show the APOD for " + this.dateFormatPrint(nextDay);
+
+    if(this.loading == "next")
+      return "<img id='imgNext' src='" + this.baseImg + "apod_loading.gif' width='16' height='16' title='Loading' />";
+    else if(this.date < last)
+      return "<a href='javascript:void(0);' onclick='apod.loadNext(); return false;'><img id='imgNext' src='" + this.baseImg + "apod_next.gif' width='16' height='16' title='" +imgTitle+ "' onmouseover='this.src=\""+this.baseImg+"apod_next_on.gif\";' onmouseout='this.src=\""+this.baseImg+"apod_next.gif\";' /></a>";
+    else
+      return "<img id='imgNext' src='" + this.baseImg + "apod_next_off.gif' width='16' height='16' title='This is the latest APOD' />";
+  },
+
+  dateFormatApod : function(date) {
+    var year  = date.getFullYear() - 2000 < 10 ?
+                  "0" + (date.getFullYear()-2000) :
+                  date.getFullYear()-2000;
+    var month = date.getMonth() + 1 < 10 ?
+                  "0" + (date.getMonth() + 1) :
+                  date.getMonth() + 1;
+    var day   = date.getDate() < 10    ?
+                  "0" + date.getDate() :
+                date.getDate();
+    return year + month + day;
+  },
+
+  dateFormatPrint : function(date) {
+    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    var year  = date.getFullYear();
+    var month = months[date.getMonth()];
+    var day   = date.getDate();
+    return month + " " + day + ", " + year;
+  },
+
+  removeTag : function(str, tag) {
+    return str.replace(new RegExp("<[/]{0,1}["+tag+"][^><]*>", "g"),"")
+  },
+
+  shrinkImages : function() {
+    //console.log("shrinking to %i", _gel("o").clientWidth);
+
+    var fuzz   = 5;
+    var images = _gel("o").getElementsByTagName("img");
+    for(var i=0; i<images.length; i++) {
+      if(images[i].width > (_gel("o").clientWidth - fuzz)) {
+        images[i].width = images[i].width * ((_gel("o").clientWidth-fuzz) / images[i].width);
+        //console.log(images[i].src.substring(images[i].src.lastIndexOf("/")) + " hit " + images[i].width * ((_gel("o").clientWidth-fuzz) / images[i].width));
+      }
+    }
+  },
+
+  makeMidnight : function(date) {
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    return date;
+  }
+}
+
+_IG_RegisterOnloadHandler(apod.init());
+
+</script>
+
+
+<style type="text/css">
+#o {
+  font-size: 72.5%;
+}
+#o a {
+  text-decoration: none;
+}
+#gui {
+  text-align: center;
+  margin-top: 5px;
+}
+#title {
+  font-weight: bold;
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+#title a {
+  color: black;
+}
+#title a:hover {
+  color: #0000CC;
+}
+#image {
+  text-align: center;
+  margin-bottom: 5px;
+}
+#img {
+  border: 2px solid #FFFFFF;
+}
+#img:hover {
+  border: 2px solid #0000CC;
+}
+#credit {
+  text-align: center;
+  margin-bottom: 5px;
+}
+#blurb a {
+  text-decoration: underline;
+}
+#gui a img {
+  border: 0;
+}
+#date {
+  float: right;
+  color: #000000;
+  font-weight:bold;
+}
+#date:hover {
+  cursor: pointer;
+  color: #0000CC;
+}
+.common {
+  width: 98%;
+}
+.hack {
+  clear: both;
+}
+</style>
+
+
+<div id="o"></div>
+
+]]>
+</Content>
+</Module>

@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://boolean.googlepages.com/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "Astronomy Picture of the Day"
+  height              = "333"
+  scaling             = "true"
+  scrolling           = "true"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+  <Require feature="setprefs"/>
+</ModulePrefs>
+
+<UserPref name="title" display_name="Title" datatype="string" default_value="Astronomy Picture of the Day" />
+<UserPref name="show_title"  display_name="Show Title"       datatype="bool" default_value="true" />
+<!--<UserPref name="show_credit" display_name="Show Copyright"   datatype="bool" default_value="true" />-->
+<UserPref name="show_blurb"  display_name="Show Explanation" datatype="bool" default_value="true" />
+
+<Content type="html">
+<![CDATA[
+
+<style type="text/css">@import url("http://www.talisweb.com/justin/gmodules/apod/calendar-blue.css");</style>
+
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/apod/calendar.js"></script>
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/apod/calendar-en.js"></script>
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/apod/calendar-setup.js"></script>
+
+<script type="text/javascript">
+
+var apod = {
+  FIRSTAPOD : new Date(1995, 05, 16),
+  baseImg   : "http://www.talisweb.com/justin/gmodules/apod/",
+  baseUrl   : "",
+  today     : null,
+  date      : "",
+  image     : "",
+  title     : "",
+  credit    : "",
+  blurb     : "",
+  loading   : "",
+
+
+  init : function() {
+    this.date  = new Date();
+    this.today = this.makeMidnight(this.date);
+    this.loadData();
+    this.lightbox.init();
+  },
+
+
+  loadData : function() {
+    _IG_FetchContent(this.getUrl(true), this.loadDataCallback);
+  },
+
+  lightbox : {
+    elm    : null,
+    divBox : "lightboxBox",
+    divBg  : "lightboxBg",
+    divImg : "lightboxImg",
+
+    show : function() {
+      if(!this.elm)
+        return false;
+
+      this.enlargeImage();
+      this.centerImage();
+      this.setImage();
+
+      this.elm.style.display = "block";
+    },
+
+    hide : function() {
+      if(!this.elm)
+        return false;
+      this.elm.style.display = "none";
+    },
+
+    init : function() {
+      // the container that holds all the lightbox elements
+      this.elm = document.createElement("div");
+      this.elm.id = this.divBox;
+      this.elm.style.display = "none";
+
+      // background div that changes opacity
+      var obj               = document.createElement("div");
+      obj.id                = this.divBg;
+      obj.style.position    = "absolute";
+      obj.style.width       = "100%";
+      obj.style.height      = "100%";
+      obj.style.left        = 0;
+      obj.style.top         = 0;
+      obj.style.border      = 0;
+      obj.style.padding     = 0;
+      obj.style.margin      = 0;
+      obj.style.zIndex      = 3;
+      obj.style.background  = "#000000";
+      obj.style.overflow    = "none";
+
+      obj.appendChild(document.createTextNode("background div"));
+      this.elm.appendChild(obj);
+
+      // image div
+      var obj2               = document.createElement("img");
+      obj2.id                = this.divImg;
+      obj2.style.position    = "absolute";
+      obj2.style.width       = "50%";
+      obj2.style.height      = "50%";
+      obj2.style.left        = "200px";
+      obj2.style.top         = "200px";
+      obj2.style.border      = "1px solid grey";
+      obj2.style.padding     = 0;
+      obj2.style.margin      = 0;
+      obj2.style.zIndex      = 4;
+
+      obj2.appendChild(document.createTextNode("image div"));
+      this.elm.appendChild(obj2);
+      document.getElementsByTagName("body")[0].appendChild(this.elm);
+
+      this.setOpacity(obj.id, .7);
+
+    },
+
+    /**
+     * Set the opacity of an HTML element -- from YUI
+     */
+    setOpacity : function(div, val) {
+      var el = _gel(div);
+      if(!el)
+        return;
+
+      if (window.ActiveXObject && typeof el.style.filter == 'string') { // in case not appended
+        el.style.filter = 'alpha(opacity=' + val * 100 + ')';
+        if (!el.currentStyle || !el.currentStyle.hasLayout) {
+          el.style.zoom = 1; // when no layout or cant tell
+        }
+      }
+      else {
+        el.style.opacity = val;
+        el.style['-moz-opacity'] = val;
+        el.style['-khtml-opacity'] = val;
+      }
+    },
+
+    setImage : function() {
+      var source = _gel("img");
+      var target = _gel(this.divImg);
+      target.src = source.src;
+    },
+
+    enlargeImage : function() {
+      // store window and image widths and heights better readability
+      var scale = arguments[0] || 1;
+      var win   = this.windowDimensions();
+      var imgW  = apod.imageWidth;
+      var imgH  = apod.imageHeight;
+
+      //
+      // Calculate a new width and height that preserves aspect ratio
+      // There are lots of cases that will result in doing one of two things
+      // 1) Set the new width to the window width, then calculate the new height
+      // 2) Set the new height to the window height, then calculate the new width
+      // Use a cross product to calculate the unknown length.  For example:
+      //   Given new image height = actual image height
+      //   And new image width / new image height = actual image width / actual image height
+      //   Then new image width = (actual image width * new image height) / actual image height
+      //
+
+      // window is wide and the image is tall
+      if(this.wider(win.width, win.height) && this.taller(imgW, imgH)) {
+        newImgH = win.height;
+        newImgW = Math.round((imgW * newImgH) / imgH);
+      }
+
+      // window is tall and the image is tall
+      else if((this.taller(win.width, win.height) && this.taller(imgW, imgH))) {
+        // window is wider than the image
+        if((win.width/win.height) >= (imgW/imgH)) {
+          newImgH = win.height;
+          newImgW = Math.round((imgW * newImgH) / imgH);
+        }
+        // image is wider than the window
+        else if((win.width/win.height) < (imgW/imgH)) {
+          newImgW = win.width;
+          newImgH = Math.round((imgH * newImgW) / imgW);
+        }
+      }
+
+      // window is wide and the image is wide
+      else if((this.wider(win.width, win.height) && this.wider(imgW, imgH))) {
+        // window is wider than the image
+        if((win.width/win.height) >= (imgW/imgH)) {
+          newImgH = win.height;
+          newImgW = Math.round((imgW * newImgH) / imgH);
+        }
+        // image is wider than the window
+        else if((win.width/win.height) < (imgW/imgH)) {
+          newImgW = win.width;
+          newImgH = Math.round((imgH * newImgW) / imgW);
+        }
+      }
+
+      // window is tall and the image is wide
+      else if(this.taller(win.width, win.height) && this.wider(imgW, imgH)) {
+        newImgW = win.width;
+        newImgH = Math.round((imgH * newImgW) / imgW);
+      }
+
+      if(newImgW > imgW)
+        newImgW = imgW;
+      if(newImgH > imgH)
+        newImgH = imgH;
+
+      // scale
+      newImgW *= scale;
+      newImgH *= scale;
+      //console.log(newImgW + "x" + newImgH);
+
+      // resize the image
+      this.elm.childNodes[1].style.width = newImgW + "px";
+      this.elm.childNodes[1].style.height = newImgH + "px";
+    },
+
+    centerImage : function() {
+      var win   = this.windowDimensions();
+      var imgW  = parseInt(this.elm.childNodes[1].style.width);
+      var imgH  = parseInt(this.elm.childNodes[1].style.height);
+      var newX  = Math.floor(win.width - imgW ) / 2;
+      var newY  = Math.floor(win.height - imgH ) / 2;
+
+      this.elm.childNodes[1].style.left = newX + "px";
+      this.elm.childNodes[1].style.top  = newY + "px";
+    },
+
+    /**
+     * Returns true if lhs > rhs
+     */
+    wider : function(lhs, rhs) {
+      if(lhs > rhs)
+        return true;
+      return false;
+    },
+
+    /**
+     * Returns true if lhs < rhs
+     */
+    taller : function(lhs, rhs) {
+      if(lhs < rhs)
+        return true;
+      return false;
+    },
+
+    /**
+     * http://jibbering.com/faq/#FAQ4_9
+     */
+    windowDimensions : function() {
+      var winWidth, winHeight, d=document;
+      if(typeof window.innerWidth!='undefined') {
+        winWidth = window.innerWidth;
+        winHeight = window.innerHeight;
+      }
+      else {
+        if(d.documentElement &&
+        typeof d.documentElement.clientWidth!='undefined'
+        && d.documentElement.clientWidth != 0 ) {
+          winWidth = d.documentElement.clientWidth;
+          winHeight = d.documentElement.clientHeight;
+        }
+        else {
+          if(d.body && typeof d.body.clientWidth!='undefined') {
+            winWidth = d.body.clientWidth;
+            winHeight = d.body.clientHeight;
+          }
+        }
+      }
+
+      return {width:winWidth, height:winHeight};
+    }
+
+  },
+
+  // the 'this' object refers to the window object when called by _IG_FetchContent
+  loadDataCallback : function(res) {
+    // get rid of all data we don't want
+    var pos1 = res.toLowerCase().indexOf('<a href="image/');
+    var pos2 = res.toLowerCase().indexOf("tomorrow's picture");
+    res = res.substring(pos1, pos2);
+
+    // remove linebreaks
+    res = res.replace(/\n/g, " ");
+
+    // cut down whitespace
+    res = _trim(res).replace(/\s+/g, " ").replace(/>\s</g, "><");
+
+    // fix relative links
+    res = res.replace(/<img src="image/gi, '<img onload="apod.loadFinished();" id="img" title="Click to show the full size image" src="'+apod.baseUrl+'image');
+    res = res.replace(/(<a href=")(ap)/gi, '$1'+apod.baseUrl+'$2');
+    res = res.replace(/(<a href=")(image\/)/gi, '$1'+apod.baseUrl+'$2');
+    res = res.replace(/<a/gi, '<a target="_blank"');
+
+    // remove all HTML tags except those that contain data or formatting
+    res = apod.removeTag(res, "p");
+    res = apod.removeTag(res, "c");
+
+    // split into 4 parts
+    var parts = res.split(/<b>/);
+    apod.image  = _trim(parts[0]);
+    apod.title  = _trim(apod.removeTag(parts[1], "b"));
+    apod.credit = _trim(apod.removeTag(parts[2], "b"));
+    apod.blurb  = _trim(apod.removeTag(parts[3], "b"));
+
+    apod.render();
+  },
+
+  render : function() {
+    var html = ""+
+      "<div class='common' id='gui'>" +
+        "<div id='divPrev' style='float:left; width:16px; margin-right:5px;'>"+
+        this.getPrevLink()+
+        "</div>"+
+        "<div id='divNext' style='float:left; width:16px; margin-right:5px;'>"+
+        this.getNextLink()+
+        "</div>"+
+        "<div id='date' title='Click to choose the APOD for a specific date'>" +this.dateFormatPrint(this.date)+ "</div></div>"+
+        "<div class='hack'></div>"+
+      "</div>";
+    html += "<div class='common' id='title' style='display: " +(prefs.prefs.getBool("show_title") ? "block" : "none")+ "'><a href='" +this.getUrl()+ "' target='_blank' title='Click to show the original APOD page'>" + this.title + "</a></div>";
+    html += "<div class='common' id='image'>" + this.image + "</div>";
+    html += "<div class='common' id='credit' style='display: " +(1||prefs.prefs.getBool("show_credit") ? "block" : "none")+ "'>" + this.credit + "</div>";
+    html += "<div class='common' id='blurb' style='display: " +(prefs.prefs.getBool("show_blurb") ? "block" : "none")+ "'>" + this.blurb + "</div>";
+
+    _gel("o").innerHTML = html;
+
+    //this.shrinkImages();
+
+    Calendar.setup(
+      {
+        displayArea : "date",             // display date here
+        daFormat    : "%B %e, %Y",        // in this format
+        button      : "date",             // clicking on this div shows the calendar ->
+        onSelect    : apod.calendarClick, // by calling this method
+        disableFunc : apod.calendarCheck  // use this function to filter days without an image
+      }
+    );
+
+  },
+
+  calendarCheck : function(date, year, month, day) {
+    date = apod.makeMidnight(date);
+
+    if(date < apod.FIRSTAPOD)
+      return true;
+
+    if(date - apod.makeMidnight(new Date(1995, 5, 17)) == 0)
+      return true;
+    if(date - apod.makeMidnight(new Date(1995, 5, 18)) == 0)
+      return true;
+    if(date - apod.makeMidnight(new Date(1995, 5, 19)) == 0)
+      return true;
+
+    if(date > apod.makeMidnight(new Date()))
+      return true;
+
+    return false;
+  },
+
+  loadFinished : function() {
+    this.loading = "";
+
+    _gel("divPrev").innerHTML = this.getPrevLink();
+    _gel("divNext").innerHTML = this.getNextLink();
+    this.imageWidth  = _gel("img").width;
+    this.imageHeight = _gel("img").height;
+    this.shrinkImages();
+  },
+
+  loadNext : function() {
+    this.loading = "next";
+
+    _gel("img").style.visibility = "hidden";
+
+    this.setLoading("imgNext");
+    this.date.setDate(this.date.getDate()+1);
+    this.loadData();
+  },
+
+  loadPrev : function() {
+    this.loading = "prev";
+
+    _gel("img").style.visibility = "hidden";
+
+    this.setLoading("imgPrev");
+
+    this.date.setDate(this.date.getDate()-1);
+    this.loadData();
+  },
+
+  calendarClick : function(calendar, date) {
+    if(!calendar.dateClicked)
+      return;
+
+    apod.loading = "calendar";
+
+    //apod.setLoading("imgCal");
+    apod.date.setTime(calendar.date.getTime());
+    apod.loadData();
+    calendar.hide();
+  },
+
+  setLoading : function(objName) {
+    _gel(objName).src        = this.baseImg + "apod_loading.gif";
+    _gel(objName).onmouseout = function() {};
+  },
+
+  getBaseUrl : function() {
+    var urls = [ "http://antwrp.gsfc.nasa.gov/apod/",
+                 "http://www.brera.mi.astro.it/apod/",
+                 "http://www.usenet.net.nz/apod/",
+                 "http://www.sai.msu.su/apod/",
+                 "http://www.star.ucl.ac.uk/~apod/apod/" ];
+    var scale = 100;
+    var rand = Math.floor(Math.random() * scale);
+    var idx;
+
+    if(1 || rand <= .8 * scale)
+      idx = 0;
+    else if(rand <= .85 * scale)
+      idx = 1;
+    else if(rand <= .90 * scale)
+      idx = 2;
+    else if(rand <= .95 * scale)
+      idx = 3;
+    else if(rand <= 1.0 * scale)
+      idx = 4;
+
+    //console.log(urls[idx]);
+    return urls[idx];
+  },
+
+  getUrl : function() {
+    var random = arguments[0] || false;
+    if(random)
+      this.baseUrl = this.getBaseUrl();
+    return this.baseUrl + "ap" + this.dateFormatApod(this.date) + ".html";
+  },
+
+  getIcon : function()  {
+    if(this.loading == "calendar")
+      return "<img id='imgCal' src='" + this.baseImg + "apod_loading.gif' width='16' height='16' title='Loading' />";
+    else
+      return "<img id='imgCal' src='" + this.baseImg + "apod_calendar.gif' height='16' width='16' title='Click to show the APOD for a specific date' onmouseover='this.src=\""+this.baseImg+"apod_calendar_on.gif\";' onmouseout='this.src=\""+this.baseImg+"apod_calendar.gif\";' />";
+  },
+
+  getPrevLink : function() {
+    // date of the first APOD
+    var first    = apod.FIRSTAPOD;
+
+    var dayMS    = 1000 * 60 * 60 * 24;
+    var prevDay  = new Date();
+    prevDay.setTime(this.date.getTime() - dayMS)
+    var imgTitle = "Click to show the APOD for " + this.dateFormatPrint(prevDay);
+
+    if(this.loading == "prev")
+      return "<img id='imgPrev' src='" + this.baseImg + "apod_loading.gif' width='16' height='16' title='Loading' />";
+    else if(this.date > first)
+      return "<a href='javascript:void(0);' onclick='apod.loadPrev(); return false;'><img id='imgPrev' src='" + this.baseImg + "apod_prev.gif' width='16' height='16' title='" +imgTitle+ "' onmouseover='this.src=\""+this.baseImg+"apod_prev_on.gif\";' onmouseout='this.src=\""+this.baseImg+"apod_prev.gif\";' /></a>";
+    else
+      return "<img id='imgPrev' src='" + this.baseImg + "apod_prev_off.gif' width='16' height='16' title='This is the latest APOD' />";
+  },
+
+  getNextLink : function() {
+    // date of the last APOD
+    var last = this.makeMidnight(new Date());
+
+    var dayMS    = 1000 * 60 * 60 * 24;
+    var nextDay  = new Date();
+    nextDay.setTime(this.date.getTime() + dayMS)
+    var imgTitle = "Click to show the APOD for " + this.dateFormatPrint(nextDay);
+
+    if(this.loading == "next")
+      return "<img id='imgNext' src='" + this.baseImg + "apod_loading.gif' width='16' height='16' title='Loading' />";
+    else if(this.date < last)
+      return "<a href='javascript:void(0);' onclick='apod.loadNext(); return false;'><img id='imgNext' src='" + this.baseImg + "apod_next.gif' width='16' height='16' title='" +imgTitle+ "' onmouseover='this.src=\""+this.baseImg+"apod_next_on.gif\";' onmouseout='this.src=\""+this.baseImg+"apod_next.gif\";' /></a>";
+    else
+      return "<img id='imgNext' src='" + this.baseImg + "apod_next_off.gif' width='16' height='16' title='This is the latest APOD' />";
+  },
+
+  dateFormatApod : function(date) {
+    var year  = date.getFullYear() - 2000 < 10 ?
+                  "0" + (date.getFullYear()-2000) :
+                  date.getFullYear()-2000;
+    var month = date.getMonth() + 1 < 10 ?
+                  "0" + (date.getMonth() + 1) :
+                  date.getMonth() + 1;
+    var day   = date.getDate() < 10    ?
+                  "0" + date.getDate() :
+                date.getDate();
+    return year + month + day;
+  },
+
+  dateFormatPrint : function(date) {
+    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    var year  = date.getFullYear();
+    var month = months[date.getMonth()];
+    var day   = date.getDate();
+    return month + " " + day + ", " + year;
+  },
+
+  removeTag : function(str, tag) {
+    return str.replace(new RegExp("<[/]{0,1}["+tag+"][^><]*>", "g"),"")
+  },
+
+  shrinkImages : function() {
+    //console.log("shrinking to %i", _gel("o").clientWidth);
+
+    var fuzz   = 5;
+    var images = _gel("o").getElementsByTagName("img");
+    for(var i=0; i<images.length; i++) {
+      if(images[i].width > (_gel("o").clientWidth - fuzz)) {
+        images[i].width = images[i].width * ((_gel("o").clientWidth-fuzz) / images[i].width);
+        //console.log(images[i].src.substring(images[i].src.lastIndexOf("/")) + " hit " + images[i].width * ((_gel("o").clientWidth-fuzz) / images[i].width));
+      }
+    }
+  },
+
+  makeMidnight : function(date) {
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    return date;
+  }
+}
+
+var prefs = {
+  prefs      : null,
+  realTitle  : "m___MODULE_ID___url",
+  editTitle  : "m___MODULE_ID___0",
+  showTitle  : "m___MODULE_ID___1",
+  showCredit : "m___MODULE_ID___2",
+  showBlurb  : "m___MODULE_ID___3",
+  dispTitle  : "title__MODULE_ID__",
+  dispCredit : "credit__MODULE_ID__",
+  dispBlurb  : "blurb__MODULE_ID__",
+  editForm   : "m___MODULE_ID___form",
+  cancelLink : "m___MODULE_ID___e",
+  saveButton : "save___MODULE_ID__",
+
+
+  init : function() {
+    this.prefs = new _IG_Prefs(__MODULE_ID__);
+    //this.insert();
+  },
+
+  insert : function() {
+    var objTitle       = _gel(this.editTitle);
+    var objShowTitle   = _gel(this.showTitle);
+    var objShowTitle2  = objShowTitle.nextSibling;
+    var objShowCredit  = _gel(this.showCredit);
+    var objShowCredit2 = objShowCredit.nextSibling;
+    var objShowBlurb   = _gel(this.showBlurb);
+    var objShowBlurb2  = objShowBlurb.nextSibling;
+    var objEditForm    = _gel(this.editForm);
+    var objCancelLink  = _gel(this.cancelLink).childNodes[1] || undefined;
+    var objSaveButton  = _gel(this.saveButton);
+
+    // gadget title
+    if(typeof objTitle.onkeyup == "function") {
+      objTitle.onkeyup2 = objTitle.onkeyup;
+      objTitle.onkeyup = function() {
+        this.onkeyup2();
+        objTitle.onkeyup(); prefs.setTitle(objTitle.value);
+      };
+    }
+    else
+      objTitle.onkeyup = function() {
+        prefs.setTitle(objTitle.value);
+      };
+
+    // show image title
+    if(typeof objShowTitle2.onclick == "function") {
+      objShowTitle2.onclick2 = objShowTitle2.onclick;
+      objShowTitle2.onclick = function() {
+        this.onclick2();
+        prefs.elemDisplay(prefs.dispTitle, objShowTitle2.checked);
+      };
+    }
+    else
+      objShowTitle2.onclick = function() {
+        prefs.elemDisplay(prefs.dispTitle, objShowTitle2.checked);
+      };
+
+    // show image credit
+    if(typeof objShowCredit2.onclick == "function") {
+      objShowCredit2.onclick2 = objShowCredit2.onclick;
+      objShowCredit2.onclick = function() {
+        this.onclick2();
+        prefs.elemDisplay(prefs.dispCredit, objShowCredit2.checked);
+      };
+    }
+    else
+      objShowCredit2.onclick = function() {
+        prefs.elemDisplay(prefs.dispCredit, objShowCredit2.checked);
+      };
+
+    // show image blurb
+    if(typeof objShowBlurb2.onclick == "function") {
+      objShowBlurb2.onclick2 = objShowBlurb2.onclick;
+      objShowBlurb2.onclick = function() {
+        this.onclick2();
+        prefs.elemDisplay(prefs.dispBlurb, objShowBlurb2.checked);
+      };
+    }
+    else
+      objShowBlurb2.onclick = function() {
+        prefs.elemDisplay(prefs.dispBlurb, objShowBlurb2.checked);
+      };
+
+    // don't let the edit controls' form reset itself and clobber settings
+    objEditForm.reset = prefs.restore;
+
+    // cancel link now resets the form controls' content from user prefs
+    objCancelLink.onclick = function() {
+      objEditForm.reset = prefs.restore;
+      //showMessage("Changes have been canceled.", 5000);
+      return  _cedit("__MODULE_ID__");
+    };
+
+    // save button saves user prefs without a page refresh
+    objSaveButton.onclick = function(){
+      objEditForm.reset = function(){};
+      prefs.save('title', objTitle.value);
+      prefs.save('show_title', objShowTitle.value);
+      prefs.save('show_credit', objShowCredit.value);
+      prefs.save('show_blurb', objShowBlurb.value);
+      //showMessage("Changes have been saved.", 5000);
+      return _cedit("__MODULE_ID__");
+    };
+  },
+
+
+  restore : function() {
+    var c_obj, c_show;
+
+    // set gadget title if it has changed
+    c_obj = _gel(prefs.editTitle);
+    if(c_obj) {
+      var c_title = prefs.prefs.getString("title");
+      if(c_obj.value.toLowerCase() != c_title.toLowerCase()) {
+        prefs.setTitle(c_title);
+        c_obj.value = c_title;
+      }
+    }
+
+    c_obj = _gel(prefs.showTitle);
+    if(c_obj) {
+      c_show = prefs.prefs.getBool("show_title");
+      if(c_obj.nextSibling.checked != c_show) {
+        c_obj.value = c_show ? "1" : "0";
+        c_obj.nextSibling.checked = c_show ? true : false;
+        prefs.elemDisplay(prefs.dispTitle, c_obj.nextSibling.checked);
+      }
+    }
+
+    c_obj = _gel(prefs.showCredit);
+    if(c_obj) {
+      c_show = prefs.prefs.getBool("show_credit");
+      if(c_obj.nextSibling.checked != c_show) {
+        c_obj.value = c_show ? "1" : "0";
+        c_obj.nextSibling.checked = c_show ? true : false;
+        prefs.elemDisplay(prefs.dispCredit, c_obj.nextSibling.checked);
+      }
+    }
+
+    c_obj = _gel(prefs.showBlurb);
+    if(c_obj) {
+      c_show = prefs.prefs.getBool("show_blurb");
+      if(c_obj.nextSibling.checked != c_show) {
+        c_obj.value = c_show ? "1" : "0";
+        c_obj.nextSibling.checked = c_show ? true : false;
+        prefs.elemDisplay(prefs.dispBlurb, c_obj.nextSibling.checked);
+      }
+    }
+
+  },
+
+
+  save : function() {
+    var key = arguments[0];
+    var val = arguments[1];
+
+    // only save if the value has changed
+    var oldVal = this.prefs.getString(key);
+    //console.log("%s = %s -> %s", key, oldVal, val);
+    if(key && val != oldVal) {
+      this.prefs.set(key, val);
+      return true;
+    }
+
+    return false;
+  },
+
+  setTitle : function(str) {
+    if(_gel(this.realTitle))
+      _gel(this.realTitle).innerHTML = str;
+  },
+
+  elemDisplay : function(objName, flag) {
+    var obj = _gel(objName);
+    if(flag)
+      obj.style.display = "block";
+    else
+      obj.style.display = "none";
+  }
+
+}
+
+_IG_RegisterOnloadHandler(prefs.init());
+_IG_RegisterOnloadHandler(apod.init());
+</script>
+
+
+<style type="text/css">
+#o {
+  font-size: 72.5%;
+}
+
+#o a {
+  text-decoration: none;
+}
+
+#gui {
+  text-align: center;
+  margin-top: 5px;
+}
+#title {
+  font-weight: bold;
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+#title a {
+  color: black;
+}
+#title a:hover {
+  color: #0000CC;
+}
+
+#image {
+  text-align: center;
+  margin-bottom: 5px;
+}
+#img {
+  border: 2px solid #FFFFFF;
+}
+#img:hover {
+  border: 2px solid #0000CC;
+}
+
+#credit {
+  text-align: center;
+  margin-bottom: 5px;
+}
+#blurb {
+
+}
+#blurb a {
+  text-decoration: underline;
+}
+
+#divNext {
+
+}
+
+#divPrev  {
+
+}
+
+#divPrev a img,
+#divNext a img {
+  border: 0;
+}
+
+
+#date {
+  float: right;
+  color: #000000;
+  font-weight:bold;
+}
+#date:hover {
+  cursor: pointer;
+  color: #0000CC;
+}
+
+.common {
+  width: 98%;
+}
+
+.hack {
+  clear: both;
+}
+</style>
+
+
+<div id="o"></div>
+
+]]>
+</Content>
+</Module>
