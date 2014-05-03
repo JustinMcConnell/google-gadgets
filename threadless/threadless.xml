@@ -1,0 +1,828 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://boolean.googlepages.com/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "The latest T-shirts and news from Threadless.com"
+  title_url           = "http://www.threadless.com/"
+  description         = "The latest T-shirts and news from Threadless.com"
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_location     = "San Francisco, CA"
+  author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+  author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+  author_link         = "http://www.talisweb.com/justin/"
+  author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+  screenshot          = "http://www.talisweb.com/justin/gmodules/threadless/screenshot.png"
+  thumbnail           = "http://www.talisweb.com/justin/gmodules/threadless/thumbnail.png"
+  height              = "370"
+  width               = "320"
+  scaling             = "true"
+  scrolling           = "true"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+  <Require feature="dynamic-height"/>
+  <Require feature="tabs"/>
+  <Require feature="analytics" />
+</ModulePrefs>
+
+<UserPref name="title" display_name="Gadget Title" default_value="Threadless.com T-shirts" />
+
+<Content type="html">
+<![CDATA[
+
+<style type="text/css">
+  @import url(http://www.google.com/ig/tablib.css);
+
+  /* Override default google tabs */
+
+  .tablib_spacerTab__MODULE_ID__, .tablib_emptyTab__MODULE_ID__ {
+    border-bottom:1px solid #67C0F4;
+  }
+  .tablib_selected__MODULE_ID__ {
+    font-style: italic;
+    padding: 2px 2px;
+    border-top: 1px solid #67C0F4;
+    border-right: 1px solid #67C0F4;
+    border-left: 1px solid #67C0F4;
+    color: #DA9048;
+    height: 20px;
+    width: 105px;
+  }
+  .tablib_unselected__MODULE_ID__ {
+    padding: 2px 2px;
+    background-color: #FFFFFF;
+    border-top: 1px solid #aaaaaa;
+    border-right: 1px solid #aaaaaa;
+    border-left: 1px solid #aaaaaa;
+    border-bottom: 1px solid #67C0F4;
+    height: 20px;
+    width: 105px;
+  }
+  td.tablib_unselected__MODULE_ID__:hover {
+    border-top: 1px solid #DA9048;
+    border-right: 1px solid #DA9048;
+    border-left: 1px solid #DA9048;
+  }
+  .oogabooga__MODULE_ID__ {
+    background: blue;
+  }
+
+</style>
+
+<script type="text/javascript" src="http://www.talisweb.com/justin/gmodules/threadless/extendo.js"></script>
+
+<script type="text/javascript">
+
+// ping
+_IG_Analytics("UA-51692-4", "/threadless");
+
+var thread = {
+  // URLs for RSS feeds
+  urlTee : "",
+  urlNews : "",
+  // set to true when RSS feeds are loaded
+  loadedTees : false,
+  loadedNews : false,
+  // DOM IDs of the tabs
+  tabTees : "",
+  tabNews : "",
+  // base URL of UI images
+  baseImg : "",
+  // index of the current tee within the overall list
+  current : 0,
+  // next and previous images (from the current) used for silent loading
+  prev : null,
+  next : null,
+
+
+  // should this still be here?
+  title : "",
+
+  init : function() {
+    this.loading    = "Loading now!  Giggity!";
+    this.baseImg    = "http://www.talisweb.com/justin/gmodules/threadless/";
+    this.urlTee     = "http://threadless.com/rss/instock";
+    this.urlNews    = "http://threadless.com/rss/news";
+    this.title      = "Showing tees in stock"
+    this.tees       = [];
+    this.news       = [];
+    this.newsDotOn  = "bullet_orange.gif";
+    this.newsDotOff = "bullet_blue.gif";
+    this.prev       = new Image();
+    this.next       = new Image();
+    this.current    = 0;
+    this.inputOn    = false;
+
+    this.tabs = new _IG_Tabs(__MODULE_ID__);
+
+    // setup tees tab
+    this.tabTees = this.tabs.addDynamicTab(
+      "Tees in stock",
+      _IG_Callback(function() {
+        thread.tabClick.call(thread, "tees");
+      }),
+      {
+        title:"Tees you could be wearing in 1-2 business days",
+        html:"<img src='"+this.baseImg+"tee.gif' width='16' height='16' /> Tees in Stock"
+      }
+    );
+
+    // load tees data to its tab
+    this.loadTeesData();
+
+    // setup news gui but wait until the user clicks to load the data
+    this.tabNews = this.tabs.addDynamicTab(
+      "Weekly news",
+      _IG_Callback(function() {
+        thread.tabClick.call(thread, "news");
+      }),
+      {
+        title:"Peruse the weekly blurbs",
+        html:"<img src='"+this.baseImg+"newspaper.gif' width='16' height='16' /> Weekly News"
+      }
+    );
+
+  },
+
+  loadTeesData : function() {
+    this.tabLoading(this.tabTees, this.loading);
+    _IG_FetchXmlContent(this.urlTee,
+                        _IG_Callback(this.data,
+                                     function() {
+                                       thread.renderTee.call(thread, Math.floor(Math.random()*thread.tees.length));
+                                       _IG_AdjustIFrameHeight();
+                                     }));
+    this.loadedTees = true;
+  },
+
+  loadNewsData : function() {
+    this.tabLoading(this.tabNews, this.loading);
+    _IG_FetchXmlContent(this.urlNews,
+                        _IG_Callback(this.data,
+                                     function() {
+                                       thread.renderNews.call(thread);
+                                       _IG_AdjustIFrameHeight();
+                                     }));
+    this.loadedNews = true;
+  },
+
+  data : function(res) {
+    var callback = arguments[1] || null;
+
+    if(res != null && typeof(res) == "object" && res.firstChild != null) {
+      var list     = "";
+      var rssTitle = res.getElementsByTagName("title")[0].firstChild.nodeValue;
+      if(/in stock/i.test(rssTitle))
+        list = "tees";
+      else
+        list = "news";
+
+      var tees = res.getElementsByTagName("item");
+      var c_title, c_date, c_link, c_desc;
+      for(var i=0; i<tees.length; i++) {
+        c_title = tees[i].getElementsByTagName("title")[0].firstChild.nodeValue;
+        c_date  = tees[i].getElementsByTagName("pubDate")[0].firstChild.nodeValue;
+        c_link  = tees[i].getElementsByTagName("link")[0].firstChild.nodeValue;
+        c_desc  = tees[i].getElementsByTagName("description")[0].firstChild.nodeValue;
+        if(list == "tees")
+          thread.tees.push(new item(c_title, new Date(c_date), c_link, c_desc, i));
+        else if(list == "news")
+          thread.news.push(new item(c_title, new Date(c_date), c_link, c_desc, i));
+      }
+    }
+
+    if(callback)
+      callback();
+  },
+
+  tabClick : function(tabId) {
+    // load news data if this is the first time the tab is shown
+    if(tabId == "news" && !this.loadedNews) {
+      this.loadNewsData();
+    }
+    _IG_AdjustIFrameHeight();
+  },
+
+  tabLoading : function(divName, verbiage) {
+    var div = _gel(divName);
+    if(!div)
+      return;
+    div.innerHTML = "<div style='margin-top:20px; text-align:center;'><img src='"+this.baseImg+"loading.gif' width='16' height='16' /> " + verbiage + "</div>";
+  },
+
+  renderTeeNext : function() {
+    this.renderTee(this.current+1);
+  },
+
+  renderTeePrev : function() {
+    this.renderTee(this.current-1);
+  },
+
+  renderTee : function(idx) {
+    // no tees were loaded
+    if(!this.tees || this.tees.length < 1) {
+      _gel(this.tabTees).innerHTML = ""+
+        "<div id='tees'>Oops!  It looks like your computer and the Threadless web servers are giving each other the silent treatment.  Better to return in a few minutes.</div>"+
+        "";
+      return false;
+    }
+    // the tee index is out of range
+    if(idx < 0 || idx >= this.tees.length) {
+      return false;
+    }
+
+    var c_tee = this.tees[idx];
+
+    // preload previous and next image
+    if(idx-1 > 0)
+      this.prev.src = this.tees[idx-1].img;
+    if(idx+1 < this.tees.length)
+      this.next.src = this.tees[idx+1].img;
+
+    // set current image index
+    this.current = idx;
+
+
+    //
+    // start constructing output -- all nodes get inserted here
+    //
+    var tees = document.createElement("div");
+    tees.id  = "tees";
+
+    //
+    // controls bar
+    //
+    var controlsDiv       = document.createElement("div");
+    controlsDiv.id        = "controls";
+    controlsDiv.className = "common tail";
+
+    //
+    // previous tee IN controls bar
+    // <div><a><img /><span>last</span></div>
+    //
+    var prevDiv      = document.createElement("div");
+    prevDiv.id       = "prev";
+
+    var prevDivA     = document.createElement("a");
+    prevDivA.href    = "#";
+    prevDivA.onclick = function() {thread.renderTeePrev()};
+
+    var prevDivSpan  = document.createElement("span");
+    prevDivSpan.appendChild(document.createTextNode(" Last"));
+
+    var prevDivImg     = document.createElement("img");
+    prevDivImg.width   = 16;
+    prevDivImg.height  = 16;
+
+    if(this.current == 0) {
+      prevDiv.title  = "This is the first tee!";
+      prevDivImg.src = this.baseImg+"arrowl_off.gif";
+      prevDiv.appendChild(prevDivImg);
+      prevDiv.appendChild(prevDivSpan);
+    }
+    else {
+      prevDiv.title  = "Show me the last tee!";
+      prevDivImg.src = this.baseImg+"arrowl.gif";
+      prevDivA.appendChild(prevDivImg);
+      prevDivA.appendChild(prevDivSpan);
+      prevDiv.appendChild(prevDivA);
+    }
+
+    //
+    // next tee IN controls bar
+    // <div><a><span>next</span><img /></div>
+    //
+    var nextDiv      = document.createElement("div");
+    nextDiv.id       = "next";
+
+    var nextDivA     = document.createElement("a");
+    nextDivA.href    = "#";
+    nextDivA.onclick = function() {thread.renderTeeNext()};
+
+    var nextDivSpan = document.createElement("span");
+    nextDivSpan.appendChild(document.createTextNode("Next "));
+
+    var nextDivImg     = document.createElement("img");
+    nextDivImg.width   = 16;
+    nextDivImg.height  = 16;
+
+    if(this.current >= this.tees.length-1) {
+      nextDiv.title  = "This is the last tee!";
+      nextDivImg.src = this.baseImg + "arrowr_off.gif";
+      nextDiv.appendChild(nextDivSpan);
+      nextDiv.appendChild(nextDivImg);
+    }
+    else {
+      nextDiv.title  = "Show me the next tee!";
+      nextDivImg.src = this.baseImg + "arrowr.gif";
+      nextDivA.appendChild(nextDivSpan);
+      nextDivA.appendChild(nextDivImg);
+      nextDiv.appendChild(nextDivA);
+    }
+
+    //
+    // "x of y" counter
+    // <div><input=x><span> of y</span></div>
+    //
+    var countDiv = document.createElement("div");
+    countDiv.id  = "count";
+
+
+    //
+    // display current tee number and let the user change it
+    //
+    var pageForm      = document.createElement("form");
+    pageForm.title    = "Give a number, get a tee";
+    pageForm.onsubmit = function() {
+                          if(!thread.takeInput(_gel("page").value))
+                            _gel("page").value = thread.current + 1;
+                          return false;
+                        };
+    var pageInput     = document.createElement("input");
+    pageInput.id      = "page";
+    pageInput.type    = "text";
+    pageInput.value   = this.current + 1;
+    pageInput.onfocus = function() {
+                          thread.inputOn = true;
+                          thread.addClass("page", "pageSelected");
+                        };
+    pageInput.onblur  = function() {
+                          if(!thread.takeInput(_gel("page").value))
+                            _gel("page").value = thread.current + 1;
+                          thread.delClass("page", "pageSelected");
+                          thread.inputOn = false;
+                        };
+    pageInput.onkeyup = function(e) {
+                             if(!e)
+                               e = window.event;
+                             var charCode = typeof e.which != "undefined" && e.which != 0
+                                            ? e.which
+                                            : (typeof e.charCode != "undefined" && e.charCode != 0
+                                               ? e.charCode
+                                               : e.keyCode);
+                             //console.log("used: %i which: %i charCode: %i keyCode: %i", charCode, e.which, e.charCode, e.keyCode);
+                             // up arrow, pgup -- render next tee
+                             if(charCode == 38 || charCode == 33) {
+                               if(!thread.takeInput(+_gel("page").value+1)) {
+                                 _gel("page").value = thread.current+1;
+                               }
+                               return false;
+                             }
+                             // down arrow, pgdn -- render last tee
+                             else if(charCode == 40 || charCode == 34) {
+                               if(!thread.takeInput(+_gel("page").value-1)) {
+                                 _gel("page").value = thread.current+1;
+                               }
+                               return false;
+                             }
+                             // kill letters
+                             else if((charCode >= 65 && charCode <= 90) ||
+                                     (charCode >= 97 && charCode <= 122)) {
+                               return false;
+                             }
+
+                             // stop the event (non numbers or control keys)
+                             return true;
+                           };
+
+    //
+    // total number of tees
+    //
+    var totalSpan   = document.createElement("span");
+    totalSpan.id    = "total";
+    totalSpan.title = this.tees.length + " tees in stock to choose from";
+    totalSpan.appendChild(document.createTextNode(" of " + this.tees.length));
+
+    pageForm.appendChild(pageInput);
+    countDiv.appendChild(pageForm);
+    countDiv.appendChild(totalSpan);
+
+    var hackDiv       = document.createElement("div");
+    hackDiv.className = "hack";
+
+    //
+    // tee title
+    //
+    var nameDiv       = document.createElement("div");
+    nameDiv.id        = "name";
+    nameDiv.className = "common tail";
+
+    var nameDivA     = document.createElement("a");
+    nameDivA.href    = c_tee.link;
+    nameDivA.title   = "Show me more info about this tee! (new tab)";
+    nameDivA.target  = "_blank";
+    nameDivA.appendChild(document.createTextNode(c_tee.title));
+    nameDiv.appendChild(nameDivA);
+
+    //
+    // tee image
+    // <div><a><img /></a></div>
+    //
+    var imgDiv        = document.createElement("div");
+    imgDiv.id         = "img";
+    imgDiv.className  = "common";
+
+    var imgDivA     = document.createElement("a");
+    imgDivA.href    = c_tee.link;
+    imgDivA.title   = "Show me more info about this tee! (new tab)";
+    imgDivA.target  = "_blank";
+
+    var imgDivImg = document.createElement("img");
+    imgDivImg.width = 250;
+    imgDivImg.height = 272;
+    imgDivImg.src = c_tee.img;
+
+    //
+    // construct the tree
+    //
+    imgDivA.appendChild(imgDivImg);
+    imgDiv.appendChild(imgDivA);
+
+    controlsDiv.appendChild(prevDiv);
+    controlsDiv.appendChild(countDiv);
+    controlsDiv.appendChild(nextDiv);
+    controlsDiv.appendChild(hackDiv);
+
+    tees.appendChild(controlsDiv);
+    tees.appendChild(nameDiv);
+    tees.appendChild(imgDiv);
+
+    //
+    // append the tree to the tee tab
+    //
+    _gel(this.tabTees).innerHTML = "";
+    _gel(this.tabTees).appendChild(tees);
+
+
+    if(this.inputOn) {
+      pageInput.focus();
+    }
+
+  },
+
+  renderNews : function() {
+    if(!this.news || this.news.length < 1) {
+      _gel(this.tabNews).innerHTML = ""+
+        "<div id='tees'>Oops!  It looks like your computer and the Threadless web servers are giving each other the silent treatment.  Better to return in a few minutes.</div>";
+
+      return false;
+    }
+
+    var c_news, c_date, extraClass, html = "";
+
+    html += "<div id='news'><ul class='newsList'>";
+    for(var i=0; i<this.news.length; i++) {
+      c_news = this.news[i];
+      extraClass = "newsTitleMiddle";
+      if(i==0)
+        extraClass = "newsTitleFirst";
+      else if(i==this.news.length-1)
+        extraClass = "newsTitleLast";
+
+      c_date = (c_news.date.getMonth()+1) + "-" +
+               (c_news.date.getDate() < 10 ?
+                  "0" + c_news.date.getDate() :
+                  c_news.date.getDate()) + "-" +
+               c_news.date.getFullYear();
+
+      html += ""+
+        "<li class='newsTitle " +extraClass+ "' id='newsTitle" +c_news.id+ "' onclick='thread.newsInfoFlip.call(thread, "+c_news.id+");'>"+
+        "<img id='newsImage"+c_news.id+"' src='" + this.baseImg + this.newsDotOff + "' width='10' height='10' /> " + c_news.title+ "</li>"+
+        "<li class='newsBody' id='newsBody" +c_news.id+ "'>"+
+        "<div class='newsDate'>Proclaimed to the world on " +c_date+ "</div>"+
+        "<p>" +c_news.desc+ "</p>"+
+        "<div class='newsBodyClose' onclick='thread.newsInfoFlip.call(thread, "+c_news.id+");' title='Close this news post'>Finished Reading</div>";
+        "</li>";
+    }
+    html += "</ul></div>";
+
+    _gel(this.tabNews).innerHTML = html;
+
+    this.shrinkImages();
+  },
+
+  newsInfoNext : function(id) {
+    this.newsInfoFlip(id);
+    if(id+1 < this.news.length)
+      this.newsInfoFlip(id+1);
+  },
+
+  newsInfoFlip : function(id) {
+    this.toggleDisplay("newsBody"+id);
+    this.toggleClass("newsTitle"+id, "newsTitleSelected");
+
+    if(_gel("newsBody"+id).style.display == "block");
+      // document.location.href = "#newsTitle"+id;
+    else
+      _IG_AdjustIFrameHeight();
+
+    var img = _gel("newsImage"+id);
+
+    if(img.src.indexOf(this.newsDotOn) != -1)
+      img.src = this.baseImg + this.newsDotOff;
+    else
+      img.src = this.baseImg + this.newsDotOn;
+
+  },
+
+  takeInput : function(input) {
+    if(typeof input != "number")
+      input = +input;
+    if(typeof input != "number" ||
+       isNaN(input)             ||
+       input < 1                ||
+       input > this.tees.length ||
+       input-1 == this.current)
+      return false;
+
+    this.renderTee(input-1);
+    return true;
+  },
+
+  toggleDisplay : function(id) {
+    var obj = _gel(id);
+    if(!obj)
+      return false;
+
+    if(!obj.style.display || obj.style.display == "none")
+      obj.style.display = "block";
+    else
+      obj.style.display = "none";
+  },
+
+  toggleClass : function(theDiv, theClass) {
+    if(typeof theDiv == "string")
+      theDiv = _gel(theDiv);
+    if(!theDiv)
+      return false;
+
+    if(theDiv.className.indexOf(theClass) != -1)
+      this.delClass(theDiv, theClass);
+    else
+      this.addClass(theDiv, theClass);
+  },
+
+  addClass : function(theDiv, theClass) {
+    if(typeof theDiv == "string")
+      theDiv = _gel(theDiv);
+    if(!theDiv)
+      return false;
+
+    theDiv.className += " " + theClass;
+  },
+
+  delClass : function(theDiv, theClass) {
+    if(typeof theDiv == "string")
+      theDiv = _gel(theDiv);
+    if(!theDiv)
+      return false;
+
+    theDiv.className = theDiv.className.replace(new RegExp("\\s?"+theClass), "");
+  },
+
+  shrinkImages : function() {
+    var fuzz   = 30;
+    var images = _gel("news").getElementsByTagName("img");
+    for(var i=0; i<images.length; i++) {
+      if(images[i].width > (_gelstn("body")[0].clientWidth - fuzz)) {
+        images[i].width = images[i].width * ((_gelstn("body")[0].clientWidth-fuzz) / images[i].width);
+        //console.log(images[i].src.substring(images[i].src.lastIndexOf("/")) + " hit " + images[i].width * ((_gelstn("body")[0].clientWidth-fuzz) / images[i].width));
+      }
+    }
+  }
+}
+
+// RSS item
+function item() {
+  this.title  = arguments[0] || "";
+  this.date   = arguments[1] || "";
+  this.link   = arguments[2] || "";
+  this.desc   = arguments[3].replace(/<a\s/ig, "<a target='blank' ") || "";
+  this.id     = arguments[4] || 0;
+  var matches = /img src="(.*?)"/.exec(this.desc);
+  this.img    = matches && matches[1] ? matches[1] : "";
+}
+
+// Go go Gadget javascript
+_IG_RegisterOnloadHandler(thread.init.call(thread));
+
+</script>
+
+<style type="text/css">
+
+#tees {
+  display: block;
+  padding: 0;
+  font-size: 72.5%;
+  text-align: center;
+
+  border-right:1px solid #67C0F4;
+  border-bottom:1px solid #67C0F4;
+  border-left:1px solid #67C0F4;
+}
+
+#tees a {
+  text-decoration: none;
+  color: black;
+}
+#tees a img {
+  border: 0;
+}
+
+#news {
+  display: block;
+  padding: 0;
+  font-size: 72.5%;
+  border-bottom: 1px solid #67C0F4;
+}
+
+#news a img {
+  border: 0;
+}
+
+#controls {
+  padding-top: 5px;
+  text-align: center;
+}
+
+#name {
+  text-align: center;
+  font-style: italic;
+  font-size: 1.2em;
+}
+#name a:hover {
+  color: #1010B0;
+}
+
+#img {
+  text-align: center;
+  padding-bottom: 10px;
+}
+
+#img a img {
+  border: 1px solid #FFFFFF;
+  padding: 2px;
+}
+#img a img:hover {
+  border: 1px solid #1010B0;
+}
+
+#prev, #next {
+  height: 20px;
+  line-height: 20px;
+  width: 25%;
+}
+#prev {
+  float: left;
+  text-align: left;
+}
+#prev > span,
+#next > span {
+  color: #808080;
+}
+#next {
+  float: right;
+  text-align: right;
+}
+
+#prev img, #prev span,
+#next img, #next span {
+  vertical-align: middle;
+}
+
+#prev a,
+#next a {
+  color: inherit;
+}
+
+#prev a:hover,
+#next a:hover {
+  color: #DA9048;
+}
+
+#count {
+  float: left;
+  text-align: center;
+  width: 49%;
+}
+#count form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+#total {
+
+}
+
+#page {
+  border: 1px solid #D5DCE9;
+  width: 2em;
+  text-align: center;
+  font-size: inherit;
+}
+#page:hover, #page.pageSelected {
+  background: #FFFFFF;
+  border: 1px solid #DA9048;
+}
+
+.hack {
+  clear: both;
+}
+.tail {
+  padding-bottom: 5px;
+}
+.head {
+  margin-top: 5px;
+}
+div.pseudolink:hover {
+  cursor: pointer;
+}
+
+.common {
+  margin: 0 auto;
+  width: 250px;
+}
+
+.newsList {
+  list-style-type: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+li.newsTitle {
+  display: block;
+  border-right: 1px solid #67C0F4;
+  border-left: 1px solid #67C0F4;
+  text-align: left;
+  padding: 2px 0 2px 2px;
+}
+li.newsTitle:hover {
+  cursor: pointer;
+  background-image: url(http://www.talisweb.com/justin/gmodules/threadless/gradient_orange.gif);
+  background-position: bottom left;
+  background-repeat: no-repeat;
+}
+
+li.newsTitleFirst {
+}
+li.newsTitleLast {
+}
+li.newsMiddleFirst {
+}
+
+.newsTitleSelected {
+  cursor: pointer;
+  background-image: url(http://www.talisweb.com/justin/gmodules/threadless/gradient_orange.gif);
+  background-position: bottom left;
+  background-repeat: no-repeat;
+}
+
+.newsDate {
+  color: #808080;
+  text-align: center;
+  font-style: italic;
+  padding: 5px 5px 5px 5px;
+}
+
+.newsBody {
+  display: none;
+  text-align: left;
+  border-width: 0 1px 0 1px;
+  border-style: solid;
+  border-color: #67C0F4;
+}
+
+.newsBody > p {
+  margin: 0 0 10px 0;
+  padding: 0 5px 0 5px;
+}
+
+.newsBody a {
+  color: blue;
+  text-decoration: underline;
+}
+
+div.newsBodyClose {
+  color: black;
+  text-align: center;
+  padding-bottom: 3px;
+  background-image: url(http://www.talisweb.com/justin/gmodules/threadless/gradient_orange.gif);
+  background-position: bottom left;
+  background-repeat: no-repeat;
+}
+div.newsBodyClose:hover {
+  cursor: pointer;
+  color: #DA9048;
+  background-image: url(http://www.talisweb.com/justin/gmodules/threadless/gradient_orange.gif);
+  background-position: bottom left;
+  background-repeat: no-repeat;
+}
+
+</style>
+
+]]>
+</Content>
+</Module>
