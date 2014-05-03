@@ -1,0 +1,1 @@
+// This file is included by the Local Weather gadget to make an apache log entry.

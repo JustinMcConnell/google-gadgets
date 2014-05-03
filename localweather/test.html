@@ -1,0 +1,21 @@
+<html>
+<head>
+<script type="text/javascript" src="tinyformatDate.js"></script>
+<script type="text/javascript">
+  window.onload = function() {
+    document.getElementById("foo").innerHTML = (new Date()).formatDate("g:i a") + "<br />";
+    document.getElementById("foo").innerHTML += (new Date()).formatDate("l dS \of F Y h:i:s A") + "<br />";
+    document.getElementById("foo").innerHTML += (new Date()).formatDate("l \\t\h\e jS") + "<br />";
+    document.getElementById("foo").innerHTML += (new Date()).formatDate("H:i:s") + "<br />";
+    document.getElementById("foo").innerHTML += (new Date()).formatDate("F j, Y, g:i a") + "<br />";
+    document.getElementById("foo").innerHTML += (new Date()).formatDate("Ymd") + "<br />";
+    document.getElementById("foo").innerHTML += (new Date()).formatDate("\i\t \i\s \t\h\e jS \d\a\y.") + "<br />";
+
+  }
+</script>
+
+</head>
+<body>
+<div id="foo"></div>
+</body>
+</html>

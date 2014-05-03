@@ -1,0 +1,1276 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Module>
+  <ModulePrefs
+    title="Local Weather"
+    directory_title="Local Weather"
+    description="View local weather conditions and extended forecasts for zipcodes in the USA."
+    screenshot="http://boolean.googlepages.com/lw_screenshot.png"
+    thumbnail="http://boolean.googlepages.com/lw_thumbnail.png"
+    title_url="http://www.talisweb.com/justin/"
+    author="Justin McConnell"
+    author_location="San Francisco, CA 94107"
+    author_email="boolean+gmodules@gmail.com"
+    author_affiliation="http://www.talisweb.com/justin/"
+    singleton="false"
+    scrolling="false"
+    scaling="true"
+    render_inline="required">
+      <Locale lang="en" country="us" />
+  </ModulePrefs>
+
+  <UserPref name="yahooLastDate" default_value="" datatype="hidden" />
+  <UserPref name="yahooData" default_value="" datatype="hidden" />
+  <UserPref name="zip" display_name="Zip Code" required="true" />
+  <UserPref name="default" display_name="Start With" datatype="enum" default_value="1">
+    <EnumValue value="1" display_value="Current Conditions" />
+    <EnumValue value="2" display_value="Forecast" />
+  </UserPref>
+<!--
+  <UserPref name="units" display_name="Units" default_value="English" datatype="enum">
+    <EnumValue value="English" />
+    <EnumValue value="Metric" />
+  </UserPref>
+  <UserPref name="background1" display_name="Background Color 1" default_value="Default" datatype="enum">
+    <EnumValue value="Default" />
+    <EnumValue value="Black" />
+  </UserPref>
+  <UserPref name="background2" display_name="Background Color 2" default_value="Default" datatype="enum">
+    <EnumValue value="Default" />
+    <EnumValue value="Darkblue" />
+  </UserPref>
+  <UserPref name="text1" display_name="Text Color 1" default_value="Default" datatype="enum">
+    <EnumValue value="Default" />
+    <EnumValue value="Black" />
+    <EnumValue value="White" />
+  </UserPref>
+  <UserPref name="text2" display_name="Text Color 2" default_value="Default" datatype="enum">
+    <EnumValue value="Default" />
+    <EnumValue value="Black" />
+    <EnumValue value="White" />
+  </UserPref>
+-->
+
+  <Content type="html">
+    <![CDATA[
+
+      <script src="http://boolean.googlepages.com/tinyxmlsax.js" type="text/javascript"></script>
+      <script src="http://boolean.googlepages.com/tinyxmlw3cdom.js" type="text/javascript"></script>
+      <script src="http://boolean.googlepages.com/formatDate.js" type="text/javascript"></script>
+      <script src="http://www.talisweb.com/justin/gmodules/localweather/ping.js" type="text/javascript"></script>
+
+
+      <script type="text/javascript">
+      // base image URL
+      image_url__MODULE_ID__ = "http://boolean.googlepages.com/lw_";
+
+      // API Preferences object
+      var prefs__MODULE_ID__;
+      var CACHE_GOOGLE__MODULE_ID__ = 1;
+
+      // City and State for the user's zip
+      var loc_city__MODULE_ID__, loc_state__MODULE_ID__;
+
+      // all tabs
+      var tabs__MODULE_ID__ = ["current__MODULE_ID__", "forecast__MODULE_ID__", "about__MODULE_ID__"];
+
+      // name of current visible tab
+      var tab_curr__MODULE_ID__ = tabs__MODULE_ID__[0];
+
+      // PHP-like datetime format
+      var format_time1__MODULE_ID__ = "g:i a \\G\\M\\To";
+      var format_time2__MODULE_ID__ = "g:i a";
+
+      // display colors: background 1, background 2, text 1 and text 2
+      var color_bg1__MODULE_ID__;
+      var color_bg2__MODULE_ID__;
+      var color_txt1__MODULE_ID__;
+      var color_txt2__MODULE_ID__;
+
+      // image and description for current conditions
+      var icon_img__MODULE_ID__, info_text__MODULE_ID__, info_code__MODULE_ID__;
+
+      // map weather terms to their definitions, which mostly come from wikipedia
+      var defs_map__MODULE_ID__ = {
+        "currently":"A quick description of current conditions.",
+        "temperature":"Temperature is the physical property of a system which underlies the common notions of \"hot\" and \"cold\"; the material with the higher temperature is said to be hotter.",
+        "wind":"Wind is the roughly horizontal movement of air caused by uneven heating of the Earth's surface.  It's direction is a measure of where the wind is blowing from.",
+        "humidity":"Humidity is the concentration of water vapor in the air.  It is measured as the ratio of the current concentration to the maximum concentration.",
+        "pressure":"Atmospheric pressure is the pressure above any area in the Earth's atmosphere caused by the weight of air.",
+        "visibility":"Visibility is the maximum distance an object may be seen considering air conditions.",
+        "sunrise":"The time at which the first part of the Sun appears above the horizon in the east.",
+        "sunset":"The time at which the Sun disappears below the horizon in the west."
+      }
+      // map weather terms to their units of measurement
+      var units_map__MODULE_ID__ = {
+        "temperature":"degrees Fahrenheit (F)",
+        "wind":"miles per hour (mph)",
+        "humidity":"",
+        "pressure":"inches of mercury (in).",
+        "visibility":"miles (mi)"
+      }
+
+      // map yahoo's weather codes to their descriptions
+      var info_map__MODULE_ID__ = {
+        "0":"tornado",
+        "1":"tropical storm",
+        "2":"huricane",
+        "3":"severe thunderstorms",
+        "4":"thunderstorms",
+        "5":"mixed rain and snow",
+        "6":"mixed rain and sleet",
+        "7":"mixed snow and sleet",
+        "8":"freezing drizzle",
+        "9":"drizzle",
+        "10":"freezing rain",
+        "11":"showers",
+        "12":"showers",
+        "13":"snow flurries",
+        "14":"light snow showers",
+        "15":"blowing snow",
+        "16":"snow",
+        "17":"hail",
+        "18":"sleet",
+        "19":"dust",
+        "20":"foggy",
+        "21":"haze",
+        "22":"smoky",
+        "23":"blustery",
+        "24":"windy",
+        "25":"cold",
+        "26":"cloudy",
+        "27":"mostly cloudy (night)",
+        "28":"mostly cloudy (day)",
+        "29":"partly cloudy (night)",
+        "30":"partly cloudy (day)",
+        "31":"clear (night)",
+        "32":"sunny",
+        "33":"fair (night)",
+        "34":"fair (day)",
+        "35":"mixed rain and hail",
+        "36":"hot",
+        "37":"isolated thunderstorms",
+        "38":"scattered thunderstorms",
+        "39":"scattered thunderstorms",
+        "40":"scattered showers",
+        "41":"heavy snow",
+        "42":"scattered snow showers",
+        "43":"heavy snow",
+        "44":"partly cloudy",
+        "45":"thundershowers",
+        "46":"snow showers",
+        "47":"isolated thundershowers",
+        "100":"rain (night)",
+        "3200":"not available"
+      }
+
+      // jerry rig yahoo's weather codes to the weather icons
+      var icon_map__MODULE_ID__ = {
+        "0":"w0.gif",
+        "1":"w15.gif",
+        "2":"w12.gif",
+        "3":"w17.gif",
+        "4":"w17.gif",
+        "5":"w12.gif",
+        "6":"w13.gif",
+        "7":"w12.gif",
+        "8":"w12.gif",
+        "9":"w12.gif",
+        "10":"w13.gif",
+        "11":"w13.gif",
+        "12":"w13.gif",
+        "13":"w12.gif",
+        "14":"w12.gif",
+        "15":"w12.gif",
+        "16":"w12.gif",
+        "17":"w13.gif",
+        "18":"w12.gif",
+        "19":"w5.gif",
+        "20":"w7.gif",
+        "21":"w0.gif",
+        "22":"w0.gif",
+        "23":"w0.gif",
+        "24":"w0.gif",
+        "25":"w0.gif",
+        "26":"w8.gif",
+        "27":"w3.gif",
+        "28":"w4.gif",
+        "29":"w3.gif",
+        "30":"w4.gif",
+        "31":"w1.gif",
+        "32":"w0.gif",
+        "33":"w1.gif",
+        "34":"w0.gif",
+        "35":"w13.gif",
+        "36":"w0.gif",
+        "37":"w17.gif",
+        "38":"w17.gif",
+        "39":"w17.gif",
+        "40":"w13.gif",
+        "41":"w12.gif",
+        "42":"w12.gif",
+        "43":"w12.gif",
+        "44":"w4.gif",
+        "45":"w17.gif",
+        "46":"w12.gif",
+        "47":"w12.gif",
+        "100":"w10.gif",
+        "3200":"not available"
+      }
+
+      // the color of the temperature depends on its value
+      var temp_map__MODULE_ID__ = ["000000", "000000", "000000", "000000", "000000", "000000", "000000"];
+
+
+
+      // start everything up when the page loads
+      _IG_RegisterOnloadHandler(init__MODULE_ID__);
+      //window.onload = init__MODULE_ID__;
+      function init__MODULE_ID__() {
+        // load user prefs object from Google API
+        prefs__MODULE_ID__ = new _IG_Prefs(__MODULE_ID__);
+
+        // set colors
+        var s = prefs__MODULE_ID__.getString("background1");
+        if(s.toLowerCase() == "default" || empty__MODULE_ID__(s))
+          color_bg1__MODULE_ID__ = "#e5ecf9";
+        else
+          color_bg1__MODULE_ID__ = s;
+        s = prefs__MODULE_ID__.getString("background2");
+        if(s.toLowerCase() == "default" || empty__MODULE_ID__(s))
+          color_bg2__MODULE_ID__ = "#fff";
+        else
+          color_bg2__MODULE_ID__ = s;
+        s = prefs__MODULE_ID__.getString("text1");
+        if(s.toLowerCase() == "default" || empty__MODULE_ID__(s))
+          color_txt1__MODULE_ID__ = "#505050";
+        else
+          color_txt1__MODULE_ID__ = s;
+        s = prefs__MODULE_ID__.getString("text2");
+        if(s.toLowerCase() == "default" || empty__MODULE_ID__(s))
+          color_txt2__MODULE_ID__ = "#000";
+        else
+          color_txt2__MODULE_ID__ = s;
+
+        // set the GUI and load RSS data
+        if(prefs__MODULE_ID__.getInt("default") == 2) {
+          tab_curr__MODULE_ID__ = tabs__MODULE_ID__[1];
+          set_header__MODULE_ID__(tab_curr__MODULE_ID__);
+          load_current__MODULE_ID__(load_forecast__MODULE_ID__);
+          hide_tabs__MODULE_ID__();
+         }
+        else {
+          set_header__MODULE_ID__(tab_curr__MODULE_ID__);
+          load_current__MODULE_ID__();
+          hide_tabs__MODULE_ID__();
+          show_element__MODULE_ID__(tab_curr__MODULE_ID__);
+        }
+
+        show_element__MODULE_ID__(tab_curr__MODULE_ID__);
+
+      }
+
+      /**
+       * Load current condition data
+       */
+      function load_current__MODULE_ID__(fnCallback) {
+        loading_on__MODULE_ID__("Loading current conditions");
+        var path = "";
+
+        now     = new Date();
+        lastKey = "yahooLastDate";
+        lastVal = getPref__MODULE_ID__(lastKey);
+        if(lastVal) {
+          lastDate = new Date(lastVal);
+        }
+        else
+          lastDate = new Date(2000, 0, 0);
+        cacheLen = 1 * 3600 * 1000; // wait x hours before refreshin data from Yahoo
+        cacheKey = "yahooData";
+        var validCache = getPref__MODULE_ID__(cacheKey) != "";
+
+        // cache non-existant or stale, reload
+        if(!validCache || !lastVal || now.getTime() - lastDate.getTime() >= cacheLen) {
+          //alert("loading from Yahoo");
+          s = prefs__MODULE_ID__.getString("units");
+          // english units
+          if(s.toLowerCase() == "english" || empty__MODULE_ID__(s))
+            url = "http://xml.weather.yahoo.com/forecastrss?u=f&p="+prefs__MODULE_ID__.getString("zip");
+          // metric units
+          else
+            url = "http://xml.weather.yahoo.com/forecastrss?u=c&p="+prefs__MODULE_ID__.getString("zip");
+          //url += "&r="+(new Date().getHours() % 4);
+
+          _IG_FetchContent(url, function(responseText) {
+            //alert(url + "\n" + responseText);
+            // yahoo returned an HTTP error instead of an RSS feed
+            if(responseText.substring(0, 8).toLowerCase() == "http/1.1") {
+              // try loading from cache
+              cache = getPref__MODULE_ID__(cacheKey);
+              if(lastVal && cache) {
+                //alert("Yahoo throttled us, falling back to cache\n" + cache);
+                path__MODULE_ID__ = "Yahoo failed, cache succeeded";
+                render_current__MODULE_ID__(cache, true);
+              }
+              // error!
+              else
+                _gel("current__MODULE_ID__").innerHTML = "<p style='margin-bottom:10px;'>Current conditions could not be loaded at this time.  Try reloading the page in a few seconds.</p>";
+                //<p>If you are seeing this message on a consistent basis (more than once a week) then there may be a chance that Yahoo is limiting the amount of data it is sending.  A fix is being worked on but, in the mean time you can change your preferences so the forecast tab show up first.  Just click <strong>\"edit\"</strong> for this module and set the new \"<strong>Start With</strong>\" preference.</p>
+                path__MODULE_ID__ = "Yahoo failed, cache failed";
+            }
+            // take the RSS data and render it into HTML
+            else {
+              //alert("Yahoo returned this:\n" + responseText);
+              path__MODULE_ID__ = "Yahoo succeeded";
+              newCache = render_current__MODULE_ID__(responseText);
+              //alert("Yahoo returned:\n" + newCache);
+
+              // cache the RSS data and a timestamp of when it was loaded
+              if(newCache && newCache != "undefined") {
+                setPref__MODULE_ID__(cacheKey, newCache);
+                setPref__MODULE_ID__(lastKey, now);
+              }
+            }
+
+            // about tab is dependant on info from conditions tab
+            about_img__MODULE_ID__();
+
+            // hide the loading animation
+            loading_off__MODULE_ID__();
+
+            if(fnCallback)
+              fnCallback();
+          });
+        }
+
+        // load data from API cache
+        else {
+          cache = getPref__MODULE_ID__(cacheKey);
+          if(!cache) {
+            _gel("current__MODULE_ID__").innerHTML = "<p style='margin-bottom:10px;'>Current conditions could not be loaded at this time.  Try reloading the page in a few seconds.</p><p>No cache</p>";
+            path__MODULE_ID__ = "Skipped Yahoo, cache failed";
+          }
+          else {
+            //alert("Rendering from cache " + cache.length + "\n" + cache);
+            path__MODULE_ID__ = "Skipped Yahoo, cache succeeded";
+            render_current__MODULE_ID__(cache, true);
+          }
+
+          // about tab is dependant on info from conditions tab
+          about_img__MODULE_ID__();
+
+          // hide the loading animation
+          loading_off__MODULE_ID__();
+        }
+
+        if(fnCallback)
+          fnCallback();
+
+
+      }
+
+      /**
+       * Load extended forecast data
+       */
+      var forecast_loaded__MODULE_ID__ = false;
+      function load_forecast__MODULE_ID__() {
+        loading_on__MODULE_ID__("Loading extended forecast");
+
+        var url  = "http://www.rssweather.com/rss.php?hwvCCChange=forecast&hwvSF=Y&maxdays=10&daysonly=0&hwvStyle=ce&alt=rss20a";
+
+        var s = prefs__MODULE_ID__.getString("units");
+        // english units
+        if(s.toLowerCase() == "english" || empty__MODULE_ID__(s))
+          url += "&hwvUT=F&hwvUP=in&hwvUS=mph&hwvUV=mi";
+        // metric units
+        else
+          url = "&hwvUT=C&hwvUP=mb&hwvUS=kmh&hwvUV=km";
+
+        var loc = prefs__MODULE_ID__.getString("zip");
+        // zip code
+        if(/^\d*$/.test(loc))
+          url += "&zipcode=" + loc;
+        else if(/^[A-Za-z]{4}$/.test(loc))
+          url += "&icao=" + loc;
+        console.log("url: %s", url);
+
+        _IG_FetchContent(url, render_forecast__MODULE_ID__);
+      }
+
+
+      function render_current__MODULE_ID__(responseText, fromCache) {
+        var html = "";
+
+        if(responseText == "" || responseText == "undefined" || typeof responseText == "undefined") {
+          _gel("current__MODULE_ID__").innerHTML = "<p>Current conditions could not be loaded at this time.  Try reloading the page in a few seconds.</p>";
+          //html += "<p>" + url + "</p>";
+        }
+        else {
+          if(responseText && fromCache) {
+            //alert("loading object\n'" + responseText + "'\n" + typeof responseText);
+            eval("w="+responseText);
+
+            loc_city__MODULE_ID__  = w.city;
+            loc_state__MODULE_ID__ = w.state;
+            info_code__MODULE_ID__ = w.info_code;
+            info_text__MODULE_ID__ = w.info_text;
+            icon_img__MODULE_ID__  = w.icon_img;
+          }
+          else {
+            w       = {};
+            now     = new Date();
+            parser  = new DOMImplementation();
+            //alert(responseText);
+            xmlDoc  = parser.loadXML(responseText);
+            docRoot = xmlDoc.getDocumentElement();
+
+            if(!xmlDoc) {
+              _gel("current__MODULE_ID__").innerHTML = "Error";
+              loading_off__MODULE_ID__();
+              return;
+            }
+
+            // get units of measurement
+            e                 = docRoot.getElementsByTagName("yweather:units").item(0);
+            w.units_temperature = e.getAttribute("temperature");
+            w.units_distance    = e.getAttribute("distance");
+            w.units_pressure    = e.getAttribute("pressure");
+            w.units_speed       = e.getAttribute("speed");
+
+            // get sunrise and sunset
+            e        = docRoot.getElementsByTagName("yweather:astronomy").item(0);
+            w.sunrise  = e.getAttribute("sunrise");
+            w.sunset   = e.getAttribute("sunset");
+
+            // get temperature
+            e           = docRoot.getElementsByTagName("yweather:wind").item(0);
+            w.temp_feels  = e.getAttribute("chill") + " " + w.units_temperature;
+            w.temp_color  = get_temp_color__MODULE_ID__(w.temp_feels);
+
+            // wind
+            w.wind_speed     = e.getAttribute("speed") + " " + w.units_speed;
+            w.wind_degrees   = parseInt(e.getAttribute("direction"));
+            w.wind_direction = get_wind_direction__MODULE_ID__(w.wind_degrees);
+
+            //
+            e             = docRoot.getElementsByTagName("yweather:atmosphere").item(0);
+            w.at_humidity   = e.getAttribute("humidity") + "%";
+            w.at_pressure   = e.getAttribute("pressure") + " " + w.units_pressure;
+            w.at_pressure_r = e.getAttribute("rising");
+            w.at_visibility = e.getAttribute("visibility").substring(0, 1) + "." +
+                            e.getAttribute("visibility").substring(1) + " " +
+                            w.units_distance;
+            // weather location
+            e          = docRoot.getElementsByTagName("yweather:location").item(0);
+            loc_city__MODULE_ID__   = e.getAttribute("city");
+            loc_state__MODULE_ID__  = e.getAttribute("region");
+            w.city  = loc_city__MODULE_ID__;
+            w.state = loc_state__MODULE_ID__;
+
+            // weather description and image
+            e           = docRoot.getElementsByTagName("yweather:condition").item(0);
+            w.temp_actual = e.getAttribute("temp") + " " + w.units_temperature;
+            w.temp_color2 = get_temp_color__MODULE_ID__(w.temp_actual);
+
+            info_code__MODULE_ID__ = e.getAttribute("code");
+            w.info_code = info_code__MODULE_ID__;
+            info_text__MODULE_ID__ = info_map__MODULE_ID__[w.info_code] ?
+                         toProperCase__MODULE_ID__(info_map__MODULE_ID__[w.info_code]) :
+                         e.getAttribute("text");
+            w.info_text = info_text__MODULE_ID__;
+            icon_img__MODULE_ID__  = icon_map__MODULE_ID__[w.info_code] ? icon_map__MODULE_ID__[w.info_code] : icon_map__MODULE_ID__[0];
+            w.icon_img = icon_img__MODULE_ID__;
+
+            // weather publication date
+            w.pub_date  = new Date(Date.parse(e.getAttribute("date")));
+            w.pub_time  = w.pub_date.formatDate(format_time1__MODULE_ID__);
+            w.pub_time2 = w.pub_date.formatDate(format_time2__MODULE_ID__);
+
+            // extended forecast quick info
+            if(0) {
+              e         = docRoot.getElementsByTagName("yweather:forecast");
+              forecasts = [];
+              for(i=0; i<e.length; i++) {
+                forecasts.push({"day":e.item(i).getAttribute("day"), "date":e.item(i).getAttribute("date"), "low":e.item(i).getAttribute("low"), "high":e.item(i).getAttribute("high"), "text":e.item(i).getAttribute("text"), "code":e.item(i).getAttribute("code")});
+              }
+            }
+          }
+
+
+          // construct html
+          html += "<table id=\"current_tbl__MODULE_ID__\" cellspacing=\"0\"><tbody>";
+          html += "<tr><td colspan=\"2\">";
+          html += "  <img style=\"float:left; margin:0 10px 0 10px; width:40px;\" src=\""+ image_url__MODULE_ID__ + w.icon_img+"\" width=\"40\" height=\"40\" alt=\""+w.info_text+"\" title=\""+w.info_text+"\" />";
+          html += "<div style=\"margin:5px 0 5px 0;\"><strong>" + w.city+ ", " +w.state+ " " + prefs__MODULE_ID__.getString("zip")+ "</strong><br />";
+
+          if(w.pub_date && w.pub_date.toString().toLowerCase() != "invalid date") {
+            cacheTs = new Date(Date.parse(getPref__MODULE_ID__(lastKey)));
+
+            html += "<span id=\"asof_conditions\" class=\"annotation\" title=\"\" onmouseover=\"//this.innerHTML='Conditions as of "+w.pub_time+"';\" onmouseout=\"//this.innerHTML='@"+w.pub_time2+"';\"><!--"+(fromCache?"":"")+"-->Conditions as of "+w.pub_time+"</span>";
+            if(fromCache)
+              html += "";
+            //<!--<br />C(" + cacheTs.formatDate(format_time1__MODULE_ID__) + ") R(" + now.formatDate(format_time1__MODULE_ID__) +")-->
+          }
+
+          html += "</div></td></tr>";
+          html += "<tr><td>Currently</td><td>" +w.info_text+ "</td></tr>";
+          html += "<tr><td>Temperature</td><td><span style=\"color:#"+w.temp_color+";\">" +w.temp_actual+ "</span>";
+          if(w.temp_feels != w.temp_actual)
+            html += ", feels like <span style=\"color:#"+w.temp_color+";\">" +w.temp_feels+ "</span>";
+          html += "</td></tr>";
+          html += "<tr><td>Wind</td><td>" +w.wind_speed+ " " +w.wind_direction+ "</td></tr>";
+          html += "<tr><td>Humidity</td><td>" +w.at_humidity+ "</td></tr>";
+          html += "<tr><td>Pressure</td><td>" +w.at_pressure+ " " +(w.at_pressure_r=="1" ? "and rising" : "and steady") + "</td></tr>";
+          html += "<tr><td>Visibility</td><td>" +w.at_visibility+ "</td></tr>";
+          html += "<tr><td>Sunrise</td><td>" +w.sunrise+ "</td></tr>";
+          html += "<tr><td>Sunset</td><td>" +w.sunset+ "</td></tr>";
+          html += "</tbody></table>";
+
+          // set div html
+          _gel("current__MODULE_ID__").innerHTML = html;
+
+          // set weather definitions in tooltips
+          set_tootltips__MODULE_ID__(_gel("current_tbl__MODULE_ID__"));
+
+          // set colors
+          stripe__MODULE_ID__(_gel("current_tbl__MODULE_ID__"), color_bg1__MODULE_ID__, color_bg2__MODULE_ID__, "#000044", color_txt2__MODULE_ID__, "");
+
+
+          cache = "{";
+          for(o in w) {
+            cache += '"' +o+ '":"' +w[o]+ '", ';
+          }
+          cache += '"ts":"'+(new Date())+'"}';
+          return cache;
+
+        }
+      }
+
+
+      function render_forecast__MODULE_ID__(responseText) {
+        html = "";
+
+        if(responseText == "") {
+          html += "<p>Extended forecast could not be loaded at this time.  Try reloading the page in a few seconds.</p>";
+        }
+        else {
+          var parser  = new DOMImplementation();
+          var xmlDoc  = parser.loadXML(responseText);
+          var docRoot = xmlDoc.getDocumentElement();
+
+          if(!xmlDoc) {
+            _gel("current__MODULE_ID__").innerHTML = "Error";
+            hide_element__MODULE_ID__("loading__MODULE_ID__");
+            return;
+          }
+
+          // parse city, state from RSS title
+          rss_title = docRoot.getElementsByTagName("title").item(0);
+          loc       = rss_title.getFirstChild().getNodeValue().replace(" Weather", "");
+
+          // weather publication date
+          e = docRoot.getElementsByTagName("pubDate");
+          pub_date  = new Date(Date.parse(e.item(e.length-1).getFirstChild().getNodeValue()));
+          pub_time  = pub_date.formatDate(format_time1__MODULE_ID__);
+          pub_time2 = pub_date.formatDate(format_time2__MODULE_ID__);
+
+          // weather description and image
+          icon_img__MODULE_ID__  = icon_map__MODULE_ID__[info_code__MODULE_ID__] ? icon_map__MODULE_ID__[info_code__MODULE_ID__] : icon_map__MODULE_ID__[0];
+          icon_text = info_map__MODULE_ID__[info_code__MODULE_ID__] ? info_map__MODULE_ID__[info_code__MODULE_ID__] : info_map__MODULE_ID__[0];
+
+          c_location = (loc_city__MODULE_ID__ || "") + ", " + (loc_state__MODULE_ID__ || "");
+          if(c_location == ", ")
+            c_location = "";
+
+          // current weather image, location and data update time
+          html += "<table id=\"forecast_tbl__MODULE_ID__\" cellspacing=\"0\"><tbody>";
+          html += "<tr><td colspan=\"2\">";
+          html += "  <img style=\"float:left; margin:0 10px 0 10px; width:40px;\" src=\""+ image_url__MODULE_ID__ +icon_img__MODULE_ID__+"\" width=\"40\" height=\"40\" alt=\""+info_text__MODULE_ID__+"\" title=\""+info_text__MODULE_ID__+"\" />";
+          html += "<div style=\"margin:5px 0 5px 0;\"><strong>" + c_location + " " + prefs__MODULE_ID__.getString("zip")+ "</strong><br /><span class=\"annotation\" title=\"\" onmouseover=\"//this.innerHTML='Predictions as of "+pub_time+"';\" onmouseout=\"//this.innerHTML='@"+pub_time2+"';\">Predictions as of "+pub_time+"</span></div></td></tr>";
+
+          // parse individual forecasts
+          forecasts = docRoot.getElementsByTagName("item");
+          for(i=0; i<forecasts.length; i++) {
+            c_title = forecasts.item(i).getElementsByTagName("title").item(0).getFirstChild().getNodeValue();
+            if(c_title.substring(0, 8).toLowerCase() != "forecast")
+              continue;
+            c_info  = forecasts.item(i).getElementsByTagName("description").item(0).getFirstChild().getNodeValue();
+            c_icon  = get_forecast_icon__MODULE_ID__(c_title, c_info);
+
+            html += "<tr><td colspan=\"2\">" + c_title + "</td></tr>";
+            html += "<tr><td colspan=\"2\">";
+            if(c_icon.img)
+              html += "<div style=\"float:left;\"><img src=\""+ image_url__MODULE_ID__ + c_icon.img+"\" width=\"40\" height=\"40\" title=\"" +c_icon.text+ "\" alt=\"" +c_icon.text+ "\" /></div>"
+            html += c_info + "</td></tr>";
+          }
+          html += "</tbody></table>";
+        }
+        // set div html
+        _gel("forecast__MODULE_ID__").innerHTML = html;
+
+        // set colors
+        stripe__MODULE_ID__(_gel("forecast_tbl__MODULE_ID__"), color_bg1__MODULE_ID__, color_bg2__MODULE_ID__, "#000044", color_txt2__MODULE_ID__, "");
+
+        // hide loading animation
+        //loading_off__MODULE_ID__();
+
+        forecast_loaded__MODULE_ID__ = true;
+
+      }
+
+      /**
+       * Reset the configuration of the header links.  Usually called when the user is
+       * switching from one tab to another.
+       */
+      function set_header__MODULE_ID__() {
+        var sep  = " - ";
+        var html = "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:100%\"><tr>"+
+                   "  <td id=\"nav__MODULE_ID__\">";
+        // current conditions is active tab
+        if(!arguments[0] || arguments[0] == "current__MODULE_ID__") {
+          html += "<span id='cc__MODULE_ID__' ondblclick='sekret__MODULE_ID__();'>Current Conditions</span>" +sep+ " <a href=\"javascript:void(0);\" onclick=\"switch_tab__MODULE_ID__('forecast__MODULE_ID__');\">Forecast</a>";
+          tab_curr__MODULE_ID__ = "current__MODULE_ID__";
+        }
+        // extended forecast is active tab
+        else if(arguments[0] == "forecast__MODULE_ID__") {
+          html += "<a href=\"javascript:void(0);\" onclick=\"switch_tab__MODULE_ID__('current__MODULE_ID__');\">Current Conditions</a>" +sep+ " Forecast";
+          tab_curr__MODULE_ID__ = "forecast__MODULE_ID__";
+        }
+        // about module is active tab
+        else if(arguments[0] == "about__MODULE_ID__") {
+          html += "<a href=\"javascript:void(0);\" onclick=\"switch_tab__MODULE_ID__('current__MODULE_ID__');\">Current Conditions</a>" +sep+ " <a href=\"javascript:void(0);\" onclick=\"switch_tab__MODULE_ID__('forecast__MODULE_ID__');\">Forecast</a>";
+        }
+        html += ""+
+          "</td>"+
+          "<td id=\"loading__MODULE_ID__\">"+
+          "  <img src=\""+ image_url__MODULE_ID__ +"loading.gif\" width=\"16\" height=\"16\" alt=\"\" />"+
+          "</td>"+
+
+          "<td id=\"question__MODULE_ID__\">"+
+          "  <a href=\"javascript:void(0);\" title=\"About Local Weather\" onclick=\"about_toggle__MODULE_ID__()\">"+
+          "    <img src=\""+ image_url__MODULE_ID__ +"help.gif\" width=\"16\" height=\"16\" alt=\"\" /></a>"+
+          "</td></tr></table>";
+
+        // set div html
+        _gel("header__MODULE_ID__").innerHTML = html;
+      }
+
+
+      /**
+       * Hide all tabs
+       */
+      function hide_tabs__MODULE_ID__() {
+        for(i=0; i<tabs__MODULE_ID__.length; i++) {
+          c_tab = _gel(tabs__MODULE_ID__[i]);
+          c_tab.style.display = "none";
+        }
+      }
+
+      /**
+       * show, hide and toggle a HTML element
+       */
+      function show_element__MODULE_ID__(id) {
+        _gel(id).style.display = "block";
+      }
+      function hide_element__MODULE_ID__(id) {
+        _gel(id).style.display = "none";
+      }
+      function toggle_element__MODULE_ID__(id) {
+        var disp = _gel(id).style.display;
+        if(disp == "none" || disp == "" || disp === undefined)
+          _gel(id).style.display = "block"
+        else
+          _gel(id).style.display = "none"
+      }
+
+      /**
+       * Show and hide loading animation
+       */
+      function loading_on__MODULE_ID__() {
+        show_element__MODULE_ID__("loading__MODULE_ID__");
+        if(arguments[0] && typeof arguments[0] == "string") {
+          obj = _gel("loading__MODULE_ID__");
+          obj.title = arguments[0];
+        }
+      }
+      function loading_off__MODULE_ID__() {
+        hide_element__MODULE_ID__("loading__MODULE_ID__");
+        obj = _gel("loading__MODULE_ID__");
+        obj.title = "";
+      }
+
+      /**
+       * Show and hide about verbiage
+       */
+      function about_toggle__MODULE_ID__() {
+        // avoid showing a blank screen if the current tab is the about tab
+        if(tab_curr__MODULE_ID__ == "about__MODULE_ID__")
+          tab_curr__MODULE_ID__ = tabs__MODULE_ID__[0];
+
+        var disp = _gel("about__MODULE_ID__").style.display;
+        if(disp == "none" || disp == "" || disp === undefined)
+          about_on__MODULE_ID__();
+        else
+          about_off__MODULE_ID__();
+      }
+      function about_on__MODULE_ID__() {
+        hide_element__MODULE_ID__(tab_curr__MODULE_ID__);
+        show_element__MODULE_ID__("about__MODULE_ID__");
+        set_header__MODULE_ID__("about__MODULE_ID__");
+      }
+      function about_off__MODULE_ID__() {
+        show_element__MODULE_ID__(tab_curr__MODULE_ID__);
+        hide_element__MODULE_ID__("about__MODULE_ID__");
+        set_header__MODULE_ID__(tab_curr__MODULE_ID__);
+      }
+      /**
+       * Style the about page and set items that are gleaned from the RSS feeds
+       */
+      function about_img__MODULE_ID__() {
+        // get current weather icon and description from Yahoo feed
+        var img = document.getElementById("about_img__MODULE_ID__");
+        if(icon_img__MODULE_ID__)
+          img.src   = image_url__MODULE_ID__ + icon_img__MODULE_ID__;
+        if(info_text__MODULE_ID__) {
+          img.alt   = info_text__MODULE_ID__;
+          img.title = info_text__MODULE_ID__;
+        }
+
+        // style the content
+        stripe__MODULE_ID__(_gel("about_tbl__MODULE_ID__"), color_bg1__MODULE_ID__, color_bg2__MODULE_ID__, "#000044", color_txt2__MODULE_ID__, "NO_ARROW,BOLD");
+      }
+
+
+      /**
+       * Hide all tabs and show the selected one
+       */
+      function switch_tab__MODULE_ID__(id) {
+        if(id == "forecast__MODULE_ID__" && !forecast_loaded__MODULE_ID__)
+          load_forecast__MODULE_ID__();
+        hide_tabs__MODULE_ID__();
+        show_element__MODULE_ID__(id);
+        set_header__MODULE_ID__(id);
+        loading_off__MODULE_ID__();
+      }
+
+
+      /**
+       * Return a hex color code based on the current temperature.
+       */
+      function get_temp_color__MODULE_ID__(temp) {
+        temp_color = "";
+        if(parseInt(temp) > 100)
+          temp_color = temp_map__MODULE_ID__[6];
+        else if(parseInt(temp) < 100 && parseInt(temp) > 80)
+          temp_color = temp_map__MODULE_ID__[5];
+        else if(parseInt(temp) < 80 && parseInt(temp) > 60)
+          temp_color = temp_map__MODULE_ID__[4];
+        else if(parseInt(temp) < 60 && parseInt(temp) > 40)
+          temp_color = temp_map__MODULE_ID__[2];
+        else if(parseInt(temp) < 40 && parseInt(temp) > 20)
+          temp_color = temp_map__MODULE_ID__[1];
+        else if(parseInt(temp) < 20 && parseInt(temp) > 0)
+          temp_color = temp_map__MODULE_ID__[1];
+        else if(parseInt(temp) < 0)
+          temp_color = temp_map__MODULE_ID__[0];
+        return temp_color;
+      }
+
+      /**
+       * Convert from degrees to cardinal direction
+       */
+      function get_wind_direction__MODULE_ID__(wind_degrees) {
+        wind_direction = "";
+        if(wind_degrees > 0 && wind_degrees < 23)
+          wind_direction = "N";
+        else if(wind_degrees >= 23 && wind_degrees < 68)
+          wind_direction = "NE";
+        else if(wind_degrees >= 69 && wind_degrees < 113)
+          wind_direction = "E";
+        else if(wind_degrees >= 113 && wind_degrees < 158)
+          wind_direction = "SE";
+        else if(wind_degrees >= 158 && wind_degrees < 203)
+          wind_direction = "S";
+        else if(wind_degrees >= 203 && wind_degrees < 248)
+          wind_direction = "SW";
+        else if(wind_degrees >= 248 && wind_degrees < 293)
+          wind_direction = "W";
+        else if(wind_degrees >= 293 && wind_degrees < 338)
+          wind_direction = "NW";
+        else if(wind_degrees >= 338 && wind_degrees <= 360)
+          wind_direction = "N";
+        return wind_direction;
+      }
+
+      /**
+       * Guess the proper icon for an extended forecast description.  Look at for keywords in the
+       * first sentance of the description.
+       */
+      function get_forecast_icon__MODULE_ID__(title, desc) {
+        var sentance = desc.substring(0, desc.indexOf(".")).toLowerCase();
+        var answer   = new Object();
+        // forecast is day or night
+        var night    = title.toLowerCase().indexOf("night") != -1;
+
+        if(0) {
+
+        }
+        else if((sentance.indexOf("overcast") != -1 || sentance.indexOf("mostly cloudy") != -1) && night) {
+          answer.img  = icon_map__MODULE_ID__[27];
+          answer.text = info_map__MODULE_ID__[27];
+        }
+        else if(sentance.indexOf("overcast") != -1 || sentance.indexOf("mostly cloudy") != -1) {
+          answer.img  = icon_map__MODULE_ID__[26];
+          answer.text = info_map__MODULE_ID__[26];
+        }
+        else if(sentance.indexOf("cloud") != -1 && night) {
+          answer.img  = icon_map__MODULE_ID__[27];
+          answer.text = info_map__MODULE_ID__[27];
+        }
+        else if(sentance.indexOf("cloud") != -1) {
+          answer.img  = icon_map__MODULE_ID__[28];
+          answer.text = info_map__MODULE_ID__[28];
+        }
+        else if((sentance.indexOf("rain") != -1 || sentance.indexOf("showers") != -1) && night) {
+          answer.img  = icon_map__MODULE_ID__[100];
+          answer.text = info_map__MODULE_ID__[100];
+        }
+        else if((sentance.indexOf("rain") != -1 || sentance.indexOf("showers") != -1)) {
+          answer.img  = icon_map__MODULE_ID__[11];
+          answer.text = info_map__MODULE_ID__[11];
+        }
+        else if(sentance.indexOf("clear") != -1 && night) {
+          answer.img  = icon_map__MODULE_ID__[33];
+          answer.text = info_map__MODULE_ID__[33];
+        }
+        else if(sentance.indexOf("clear") != -1) {
+          answer.img  = icon_map__MODULE_ID__[34];
+          answer.text = info_map__MODULE_ID__[34];
+        }
+        else if(sentance.indexOf("snow") != -1) {
+          answer.img  = icon_map__MODULE_ID__[7];
+          answer.text = info_map__MODULE_ID__[7];
+        }
+        else if(sentance.indexOf("sunny") != -1) {
+          answer.img  = icon_map__MODULE_ID__[32];
+          answer.text = info_map__MODULE_ID__[32];
+        }
+        else if(sentance.indexOf("fog") != -1) {
+          answer.img  = icon_map__MODULE_ID__[20];
+          answer.text = info_map__MODULE_ID__[20];
+        }
+
+        return answer;
+      }
+
+      /**
+       * For the data elements on the current conditions tab (currently temperature, wind,
+       * humidity, etc.) set a tooltip by putting their definition or units of measurement
+       * into the title attribute.
+       */
+      function set_tootltips__MODULE_ID__(obj) {
+        cells = obj.getElementsByTagName("td");
+        for(var i=0; i<cells.length; i++) {
+          if(i % 2 == 1) {
+            // first try to display the units for the current measurement
+            var c_title = units_map__MODULE_ID__[cells[i].firstChild.nodeValue.toLowerCase()];
+            if(c_title)
+              cells[i].title = "Measured in " + c_title;
+            // if empty display the general info
+            else {
+              c_title = defs_map__MODULE_ID__[cells[i].firstChild.nodeValue.toLowerCase()];
+              if(c_title)
+                cells[i].title = c_title;
+            }
+          }
+        }
+      }
+
+
+      /**
+       * http://www.alistapart.com/articles/zebratables/
+       */
+      function stripe__MODULE_ID__(table) {
+        // obtain a reference to the desired table
+        // if no such table exists, abort
+        if (! table) { return; }
+
+
+        // the flag we'll use to keep track of
+        // whether the current row is odd or even
+        var even = false;
+
+        // if arguments are provided to specify the colours
+        // of the even & odd rows, then use the them;
+        // otherwise use the following defaults:
+        var evenColor = arguments[1] ? arguments[1] : "#fff";
+        var oddColor  = arguments[2] ? arguments[2] : "#eee";
+        var txtColor1 = arguments[3] ? arguments[3] : "#000";
+        var txtColor2 = arguments[4] ? arguments[4] : "#000";
+        var other     = arguments[5];
+        var bold_on   = false; // bold text
+        var arrow_on  = true;  // show arrow indicator
+        if(other) {
+          arrow_on = other.indexOf("NO_ARROW") == -1;
+          bold_on  = other.indexOf("BOLD") != -1;
+        }
+
+        // by definition, tables can have more than one tbody
+        // element, so we'll have to get the list of child
+        // &lt;tbody&gt;s
+        var tbodies = table.getElementsByTagName("tbody");
+
+        // td cells seen
+        var count = 0;
+
+        // and iterate through them...
+        for (var h = 0; h < tbodies.length; h++) {
+
+         // find all the &lt;tr&gt; elements...
+          var trs = tbodies[h].getElementsByTagName("tr");
+
+          // ... and iterate through them
+          for (var i = 0; i < trs.length; i++) {
+
+            // avoid rows that have a class attribute
+            // or backgroundColor style
+            if (! hasClass__MODULE_ID__(trs[i]) &&
+                ! trs[i].style.backgroundColor) {
+
+              // get all the cells in this row...
+              var tds = trs[i].getElementsByTagName("td");
+
+              // and iterate through them...
+              for (var j = 0; j < tds.length; j++) {
+
+                var mytd = tds[j];
+
+                // avoid cells that have a class attribute
+                // or backgroundColor style
+                if (! hasClass__MODULE_ID__(mytd) && ! mytd.style.backgroundColor)
+                  mytd.style.backgroundColor = even ? evenColor : oddColor;
+
+                if(count++ % 2 == 1) {
+                  mytd.style.color = txtColor1;
+                  mytd.style.fontVariant = "small-caps";
+
+                  if(bold_on) {
+                    mytd.style.fontWeight = "bold";
+                  }
+
+                  if(arrow_on) {
+                    var abc = new Image();
+                    // IE does not support data urls yet
+                    //abc.src = "data:image/  gif;base64,R0lGODlhCQAHAKIGAOPt//v9/9vo/9Tj//7//8nc/////wAAACH5BAEAAAYALAAAAAAJAAcAAAMSWCVk7mq1FyWt4KoRNH/G1oEJADs=";
+                    mytd.insertBefore(abc, mytd.firstChild);
+                    abc.src = image_url__MODULE_ID__ + "arrow.gif";
+                  }
+                }
+                else
+                  mytd.style.color = txtColor2;
+
+              }
+            }
+            // flip from odd to even, or vice-versa
+            even = ! even;
+          }
+        }
+      }
+      // this function is needed to work around a bug in IE related to element attributes
+      function hasClass__MODULE_ID__(obj) {
+         var result = false;
+         if (obj.getAttributeNode("class") != null) {
+             result = obj.getAttributeNode("class").value;
+         }
+         return result;
+      }
+
+
+
+      /**
+       * proper case function (JScript 5.5+)
+       * http://www.codeproject.com/jscript/propercase.asp
+       */
+      function toProperCase__MODULE_ID__(s) {
+        return s.toLowerCase().replace(/^(.)|\s(.)/g, function($1) { return $1.toUpperCase(); });
+      }
+
+      /**
+       * Return true if a string is undefined, null or empty.  Return false otherwise.
+       */
+      function empty__MODULE_ID__(str) {
+        if(typeof str == "undefined")
+          return true;
+        if(str == "" || str == null)
+          return true;
+        return false;
+      }
+
+      function ddump__MODULE_ID__(obj) {
+        delim = arguments[1] || "\n";
+        str   = "";
+        for(o in obj)
+          str += o+ " => " +obj[o] + delim;
+        return str;
+      }
+
+      function getPref__MODULE_ID__(key) {
+        if(CACHE_GOOGLE__MODULE_ID__) {
+          dataType = "";
+          if(arguments[1] && typeof arguments[1] == "string")
+            dataType = arguments[1]
+
+          if(dataType == "int")
+            return prefs__MODULE_ID__.getInt(key);
+          else if(dataType == "bool")
+            return prefs__MODULE_ID__.getBool(key);
+          else
+            return prefs__MODULE_ID__.getString(key);
+        }
+        else {
+          return getCookie__MODULE_ID__(key);
+        }
+      }
+      function setPref__MODULE_ID__(key, val) {
+        if(CACHE_GOOGLE__MODULE_ID__) {
+          //alert("set " + key + " - " + val);
+          prefs__MODULE_ID__.set(key, val);
+        }
+        else {
+          //alert("set cookie");
+          setCookie__MODULE_ID__(key, val);
+        }
+      }
+
+      function sekret__MODULE_ID__() {
+        alert(path__MODULE_ID__);
+      }
+
+      // http://www.dustindiaz.com/top-ten-javascript/
+      function getCookie__MODULE_ID__( name ) {
+        var start = document.cookie.indexOf( name + "=" );
+        var len = start + name.length + 1;
+        if ( ( !start ) && ( name != document.cookie.substring( 0, name.length ) ) ) {
+          return null;
+        }
+        if ( start == -1 ) return null;
+        var end = document.cookie.indexOf( ";", len );
+        if ( end == -1 ) end = document.cookie.length;
+        return unescape( document.cookie.substring( len, end ) );
+      }
+
+      function setCookie__MODULE_ID__( name, value, expires, path, domain, secure ) {
+        var today = new Date();
+        today.setTime( today.getTime() );
+        if ( expires ) {
+          expires = expires * 1000 * 60 * 60 * 24;
+        }
+        var expires_date = new Date( today.getTime() + (expires) );
+        try {
+          document.cookie = name+"="+escape( value ) +
+            ( ( expires ) ? ";expires="+expires_date.toGMTString() : "" ) + //expires.toGMTString()
+            ( ( path ) ? ";path=" + path : "" ) +
+            ( ( domain ) ? ";domain=" + domain : "" ) +
+            ( ( secure ) ? ";secure" : "" );
+          }
+        catch(e) {
+          //alert("Couldn't set cookie: " + e);
+        }
+      }
+
+      function deleteCookie__MODULE_ID__( name, path, domain ) {
+        if ( getCookie__MODULE_ID__( name ) ) document.cookie = name + "=" +
+            ( ( path ) ? ";path=" + path : "") +
+            ( ( domain ) ? ";domain=" + domain : "" ) +
+            ";expires=Thu, 01-Jan-1970 00:00:01 GMT";
+      }
+
+      </script>
+
+
+      <style type="text/css">
+      #container__MODULE_ID__ {
+        width: 100%;
+        z-index: 5;
+        font-size: .75em;
+        height: 250px;
+        overflow: auto;
+      }
+
+      #container__MODULE_ID__ div p {
+        margin: 0px;
+      }
+
+      #current__MODULE_ID__,
+      #forecast__MODULE_ID__,
+      #about__MODULE_ID__ {
+        font-size: inherit;
+      }
+
+      #current_tbl__MODULE_ID__,
+      #forecast_tbl__MODULE_ID__,
+      #about_tbl__MODULE_ID__ {
+        font-size: inherit;
+        width: 100%;
+      }
+
+
+      /* IE does not properly inherit some CSS values when it is not in standards compliance mode */
+      #current_tbl__MODULE_ID__ tbody tr td,
+      #forecast_tbl__MODULE_ID__ tbody tr td,
+      #about_tbl__MODULE_ID__ tbody tr td {
+        font-size: .75em;
+        font-family: "lucida grande", verdana, sans-serif;
+        padding: 3px 8px 3px 3px;
+        border-left: 0px solid #D9D9D9;
+      }
+
+      #nav__MODULE_ID__ {
+        font-size: .75em;
+        font-family: "lucida grande", verdana, sans-serif;
+        border-left: 0px solid #D9D9D9;
+      }
+
+      /* other browsers */
+      html>body #current_tbl__MODULE_ID__ tbody tr td,
+      html>body #forecast_tbl__MODULE_ID__ tbody tr td,
+      html>body #about_tbl__MODULE_ID__ tbody tr td {
+        font-size: inherit;
+        font-family: "lucida grande", verdana, sans-serif;
+        padding: 3px 8px 3px 3px;
+        border-left: 0px solid #D9D9D9;
+      }
+      html>body #nav__MODULE_ID__ {
+        font-size: .75em;
+        font-family: "lucida grande", verdana, sans-serif;
+        border-left: 0px solid #D9D9D9;
+      }
+
+
+
+      #header__MODULE_ID__, #container__MODULE_ID__ #header__MODULE_ID__ {
+        text-align: left;
+        padding: 4px 0 4px 4px;
+        margin: 0;
+        border-bottom: 2px solid #edf3fe;
+        background: #FFFFFF;
+      }
+
+      /* do not show the tab links in visited color */
+      #header__MODULE_ID__ a, #header__MODULE_ID__ a:visited {
+        color: blue;
+      }
+
+      /* hide the about tab initially since Opera cannot seem to modify its display */
+      #about__MODULE_ID__, #container__MODULE_ID__ #about__MODULE_ID__ {
+        display: none;
+      }
+
+      #about__MODULE_ID__ ul {
+        text-size: inherit;
+        margin: 3px 0 0 0;
+        padding: 0 0 0 25px;
+        list-style-image: url("http://boolean.googlepages.com/lw_arrow.gif");
+      }
+      #about__MODULE_ID__ li {
+        margin: 0;
+        padding: 0;
+      }
+
+      #nav__MODULE_ID__, #nav__MODULE_ID__ a {
+        text-size: inherit;
+        font-family: inherit;
+      }
+
+      #loading__MODULE_ID__ {
+        width: 16px;
+        height: 16px;
+        display: none;
+      }
+
+      #question__MODULE_ID__ {
+        width: 16px;
+        height: 16px;
+      }
+      #question__MODULE_ID__ a img {
+        border: 0;
+      }
+      #question__MODULE_ID__ a {
+        color: blue;
+        text-decoration: none;
+      }
+
+      .annotation {
+        font-style: italic;
+        font-size: .8em;
+      }
+
+      </style>
+
+
+      <div id="container__MODULE_ID__">
+        <div id="header__MODULE_ID__"></div>
+        <div id="current__MODULE_ID__">Loading current conditions</div>
+        <div id="forecast__MODULE_ID__">Loading forecast conditions</div>
+        <div id="about__MODULE_ID__">
+          <table id="about_tbl__MODULE_ID__" cellspacing="0"><tbody>
+          <tr><td colspan="2">
+            <img id="about_img__MODULE_ID__" style="float:left; margin:0 10px 0 10px; width:40px;" src="http://boolean.googlepages.com/lw_clear.gif" width="40" height="40" alt="" title="" />
+            <div style="margin:5px 0 5px 0;">
+              <strong>About Local Weather</strong><br />
+              <!--<span class="annotation" title="" onmouseover="this.innerHTML='Module updated May 10, 2006';" onmouseout="this.innerHTML='@May 10, 2006';">@May 10, 2006</span>-->
+            </div>
+          </td></tr>
+
+          <tr><td>Overview</td></tr>
+          <tr><td style="padding-bottom:20px;">
+            <p>View local weather conditions and extended forecasts for zipcodes in the USA.</p>
+          </td>
+
+          <tr><td>Contact</td></tr>
+          <tr><td style="padding-bottom:20px;">
+            <p>If inclined, send comments, questions or criticisms to the author's <a href="mailto:boolean+gmodule@gmail.com">e-mail</a> or <a href="http://www.justinmcconnell.com/">webpage</a>.</p>
+          </td>
+
+          <tr><td>Credits</td></tr>
+          <tr><td style="padding-bottom:20px;">
+            <p>Local Weather is made possible by free, 3<sup>rd</sup> party data and software:</p>
+            <ul>
+              <li>Current condition data are supplied by <a href="http://weather.yahoo.com/rss/">Yahoo! Weather</a></li>
+              <li>Extended forecast data are supplied by <a href="http://www.rssweather.com/">rssWeather</a>.</li>
+              <li>RSS feeds are parsed by <a href="http://xmljs.sourceforge.net/">XML for &lt;SCRIPT&gt;</a>.</li>
+            </ul>
+          </td></tr>
+
+          <tr><td>Compatibility</td></tr>
+          <tr><td style="padding-bottom:20px;">
+            <p>Local Weather has been tested with the following browsers</p>
+            <ul>
+              <li>Firefox 1.5</li>
+              <li>Internet Explorer 6.0</li>
+              <li>Opera 8.51</li>
+            </ul>
+          </td></tr>
+
+          <tr><td>Change History</td></tr>
+          <tr><td style="padding-bottom:20px;">
+            <p>Version 1.1 - June 7, 2006</p>
+            <ul style="margin-bottom:15px;">
+              <li>Client caching to reduce the load on Yahoo and rssWeather.</li>
+              <li>New user preference: Set forecast to show up first instead of local conditions</li>
+              <li>Tweaked upper navigation bar.</li>
+            </ul>
+            <p>Version 1.0 - January 25, 2006</p>
+            <ul style="margin-bottom:15px;">
+              <li>Initial Version</li>
+            </ul>
+          </td></tr>
+
+          </tbody></table>
+
+        </div>
+      </div>
+
+    ]]>
+  </Content>
+</Module>
