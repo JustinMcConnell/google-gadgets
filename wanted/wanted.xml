@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="http://boolean.googlepages.com/module.xsl"?>
+<Module>
+<ModulePrefs
+  title               = "__UP_title__"
+  directory_title     = "FBI's 10 Most Wanted"
+  title_url           = "http://www.fbi.gov/wanted/topten/fugitives/fugitives.htm"
+  description         = "Browse the FBI's 10 Most Wanted list and check out pictures, aliases, crimes and reward money for each suspect."
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_location     = "San Francisco, CA"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_link         = "http://www.talisweb.com/justin/"
+  author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+  author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+  author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+  screenshot          = "http://www.talisweb.com/justin/gmodules/wanted/screenshot.png"
+  thumbnail           = "http://www.talisweb.com/justin/gmodules/wanted/thumbnail.png"
+  height              = "275"
+  width               = "320"
+  scaling             = "true"
+  scrolling           = "true"
+  singleton           = "true">
+  <Locale lang="en" country="us" />
+  <Require feature="analytics" />
+</ModulePrefs>
+
+<UserPref name="title" display_name="Title" datatype="string" default_value="FBI's 10 Most Wanted" />
+
+<Content type="html">
+<![CDATA[
+
+<link rel="stylesheet" type="text/css" href="http://boolean.googlepages.com/wanted_style.css">
+
+<script type="text/javascript" src="http://boolean.googlepages.com/wanted_data.js"></script>
+
+<script type="text/javascript">
+
+// ping
+_IG_Analytics("UA-51692-4", "/fbi");
+
+var fbi = {
+  output     : "output",
+  nameSelect : null,
+  nameText   : null,
+  selected   : false,
+  curr       : -1,
+  sortKey    : "name",
+
+  init : function() {
+    this.normalizeData();
+    this.output = _gel(this.output);
+    if(data.length > 0)
+      this.curr = Math.floor(Math.random() * data.length);
+    this.render();
+  },
+
+  render : function() {
+    var suspect = data[this.getIndex(this.curr)];
+
+    var html = ""+
+      "<div id='suspectNameText' title='Click to change suspect' onclick='fbi.toggleSelect.call(fbi);'>"+this.getSuspectTitle()+"</div>" +
+      "<div id='suspectNameSelect'>"+
+      this.getSuspectList()+
+      "</div>"+
+      "<div id='suspectInfo'><div id='suspectPhoto' title='" +suspect.photos[0].info + "'></div>" + suspect.caution + "</div>"+
+      "<div id='suspectRemarks' class='dataCell'><h2><img src='http://www.talisweb.com/justin/gmodules/wanted/remarks.gif' width='16' height='16' /> Remarks</h2><p>" + suspect.description.Remarks + "</p></div>"+
+      "<div id='suspectAliases' class='dataCell'><h2><img src='http://www.talisweb.com/justin/gmodules/wanted/aliases.gif' width='16' height='16' /> Aliases</h2><p>" + suspect.aliases.join(", ") + "</p></div>"+
+      "<div id='suspectReward' class='dataCell'><h2><img src='http://www.talisweb.com/justin/gmodules/wanted/crimes.gif' width='16' height='16' /> Crimes</h2><p>" + suspect.crimes + "</p></div>"+
+      "<div id='suspectCrimes' class='dataCell'><h2><img src='http://www.talisweb.com/justin/gmodules/wanted/reward.gif' width='16' height='16' /> Reward</h2><p>" + suspect.reward + "</p></div>"+
+      "<div id='suspectDates' class='dataCell'><h2><img src='http://www.talisweb.com/justin/gmodules/wanted/lock.gif' width='16' height='16' /> Wanted Since</h2><p>" + suspect.dates[0] + "</p></div>"+
+      "<div id='suspectLink' class='dataCell'><h2><img src='http://www.talisweb.com/justin/gmodules/wanted/link2.gif' width='16' height='16' /> Full Info</h2><p><a href='" + suspect.link + "' target='_blank' title='New window with all information on "+ suspect.name + "'>FBI Website</a></p></div>"+
+
+      "";
+
+    this.output.innerHTML = html;
+    this.nameSelect = _gel("suspectNameSelect");
+    this.nameText   = _gel("suspectNameText");
+    this.setMugshot();
+    this.positionMenu();
+    this.sort(this.sortKey);
+  },
+
+  dateEscaped : function() {
+    var obj = arguments[0] || data[this.getIndex(this.curr)];
+    if(obj.dates && obj.dates[0])
+      return { date : new Date(obj.dates[0].replace(/^(.*?)\s(.*)$/, "$1 1 $2")),
+               info : obj.dates[0]};
+    return null;
+  },
+
+  dateUpdated : function() {
+    var obj = arguments[0] || data[this.getIndex(this.curr)];
+    var obj = data[idx];
+    if(obj.dates && obj.dates[1])
+      return { date : new Date(obj.dates[1].replace(/^(.*?)\s(.*)$/, "$1 1 $2")),
+               info : obj.dates[1]};
+    return null;
+  },
+
+  getSuspectTitle : function() {
+    return "<div class='suspectTitle'>" + data[this.getIndex(this.curr)].name + "</div>";
+  },
+
+  getSortList : function() {
+    var keys = ["name", "time", "rewardAmount"];
+    var info = ["Name", "Time Wanted", "Reward Amount"];
+    var html = "Sort by: ";
+
+    for(var i=0; i<keys.length; i++) {
+      if(keys[i] != this.sortKey)
+        html += "<a href='javascript:void(0);' onclick='fbi.sort.call(fbi, \""+ keys[i] + "\");'>"+ info[i] + "</a>";
+      else
+        html += info[i];
+
+      if(i < keys.length-1)
+        html += ", ";
+    }
+
+    return html;
+  },
+
+  getSuspectList : function() {
+    var html = ""+
+      "<div id='suspectSort'>" + this.getSortList() + "</div>"+
+      "";
+
+    for(var i=0; i<data.length; i++) {
+      var onclick = "fbi.switchToText.call(fbi, "+data[i].id+")";
+
+      var rdata = "";
+      if(this.sortKey == "rewardAmount")
+        rdata = "$" + this.commas(data[i][this.sortKey]);
+      else if(this.sortKey == "time")
+        rdata = this.dateEscaped(data[i]).info;
+
+      var floater = (this.sortKey != "") ?
+                    "<div class='listright'>" + rdata + "</div>" :
+                    "";
+      var c_class = "";
+      if(data[i].id == this.curr)
+        c_class = "listitemcurr";
+      else
+        c_class = "listitem";
+
+      if(i == data.length - 1)
+        c_class += " listitemlast";
+
+
+      html += "<div onclick='" + onclick + "'"+
+              "     id='listitem"+data[i].id+"'"+
+              "     class='"+c_class+"'>" +
+              floater +
+              data[i].name +
+              "</a></div>";
+    }
+    return html;
+  },
+
+  setMugshot : function() {
+    var photos = data[this.getIndex(this.curr)].photos;
+    var idx    = arguments[0] || 0;
+    var obj    = _gel("suspectPhoto");
+    var html   = "";
+
+    html += "<div id='suspectPhotoBar'>Photos: ";
+    for(var i=0; i<photos.length; i++) {
+      if(i == idx)
+        html += (i+1) + " ";
+      else
+        html += "<a href='javascript:void(0);' onclick='fbi.setMugshot.call(fbi, "+i+");' title='Click to show photo "+(i+1)+"'>"+(i+1)+"</a> ";
+    }
+    html += "</div>"+
+      "";
+
+    obj.innerHTML = html;
+
+    if(idx >= 0 && idx < photos.length) {
+      obj.style.background = "url('"+photos[idx].url+"')";
+      obj.title            = photos[idx].info;
+    }
+  },
+
+  positionMenu : function() {
+    this.nameSelect.style.left  = (this.getPos(this.nameText, 1)) + "px";
+    this.nameSelect.style.top   = (this.getPos(this.nameText, 0) + this.nameText.offsetHeight - 1) + "px";
+    //this.nameSelect.style.width = (this.nameText.clientWidth) + "px";
+  },
+
+  nameSelectVisible : function() {
+    return this.nameSelect.style.display == "block";
+  },
+
+  setTitle : function(str) {
+    this.nameText.firstChild.innerHTML = str;
+  },
+
+  toggleSelect : function() {
+    if(this.selected) {
+      this.switchToText();
+    }
+    else {
+      this.switchToSelect();
+    }
+  },
+
+  switchToSelect : function() {
+    this.nameSelect.style.display = "block";
+    this.nameText.className += " selectBorder";
+    _IG_AddEventHandler("click", this.handleClick);
+    this.selected = true;
+    this.setTitle("Choose a suspect");
+  },
+
+  switchToText : function(id) {
+    this.nameSelect.style.display = "none";
+    this.nameText.className = this.nameText.className.replace("selectBorder", "");
+
+    if(id != -1) {
+      this.curr = id;
+      this.render();
+    }
+    else {
+      console.log("miss");
+    }
+
+    _IG_RemoveEventHandler("click", this.handleClick);
+    this.selected = false;
+    this.setTitle(data[this.getIndex(this.curr)].name);
+  },
+
+  handleClick : function(e) {
+    if(!fbi.isAncestor(this, fbi.nameSelect) &&
+       !fbi.isAncestor(this, fbi.nameText)) {
+      fbi.switchToText.call(fbi, -1);
+    }
+  },
+
+  getIndex : function(id) {
+    for(var i=0; i<data.length; i++) {
+      if(data[i].id == id)
+        return i;
+    }
+    return 0;
+  },
+
+  normalizeData : function() {
+    for(var i=0; i<data.length; i++) {
+      data[i].aliases = unescape(data[i].aliases.join("|")).split("|");
+      data[i].crimes  = unescape(data[i].crimes);
+      data[i].caution = unescape(data[i].caution);
+      data[i].contact = unescape(data[i].contact);
+      data[i].reward  = unescape(data[i].reward);
+
+      for(j in data[i].description) {
+        data[i].description[j] = unescape(data[i].description[j]);
+      }
+    }
+  },
+
+  getPos : function(el, left) {
+    var stop = _gel("m_");
+    var val=0;
+    while(el != null) {
+      if(stop && el == stop)
+        break;
+      val += el["offset"+(left?"Left":"Top")];
+      el = el.offsetParent;
+    }
+    return val;
+  },
+
+  isAncestor : function(child, ancestor) {
+    if(typeof child == "string")
+      child = _gel(child);
+    if(typeof ancestor == "string")
+      ancestor = _gel(ancestor);
+
+    if(!child || !ancestor)
+      return false;
+
+    while(child.parentNode) {
+      child = child.parentNode;
+      if(child.id == ancestor.id)
+        return true;
+    }
+    return false;
+  },
+
+  sort : function(newSort) {
+    this.sortKey = newSort;
+
+    data.sort(function(lhs, rhs) {
+      var lhsVal, rhsVal;
+
+      if(newSort == "name") {
+        lhsVal = lhs["name"];
+        rhsVal = rhs["name"];
+      }
+      else if(newSort == "time") {
+        lhsVal = fbi.dateEscaped(lhs).date;
+        rhsVal = fbi.dateEscaped(rhs).date;
+      }
+      else if(newSort == "rewardAmount") {
+        // reverse sort by default
+        lhsVal = rhs["rewardAmount"];
+        rhsVal = lhs["rewardAmount"];
+      }
+
+      if(lhsVal > rhsVal)
+        return 1;
+      else if(lhsVal == rhsVal)
+        return 0;
+      else
+        return -1;
+    });
+
+    this.nameSelect.innerHTML = this.getSuspectList();
+  },
+
+  commas : function(str) {
+    if(typeof str != "string")
+      str = ""+str;
+    if(!/^\d*$/.test(str))
+      return;
+    var answer = "";
+    while(str.length > 3) {
+      answer = "," + str.substring(str.length-3, str.length) + answer;
+      str    = str.substring(0, str.length-3);
+    }
+    answer = str + answer;
+    return answer;
+  }
+}
+
+_IG_RegisterOnloadHandler(function(){ fbi.init.call(fbi); });
+
+</script>
+
+
+<div id="output" class="base"></div>
+
+]]>
+</Content>
+</Module>
