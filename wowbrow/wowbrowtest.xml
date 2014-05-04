@@ -1,0 +1,1090 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+<ModulePrefs
+  title               = "WoW Realm Status"
+  directory_title     = "World of Warcraft Realm Status"
+  title_url           = "http://www.talisweb.com/justin/"
+  description         = "World of Warcraft Realm Status"
+  author              = "Justin McConnell"
+  author_email        = "boolean+gmodules@gmail.com"
+  author_location     = "San Francisco, CA"
+  author_affiliation  = "http://www.talisweb.com/justin/"
+  author_link         = "http://www.talisweb.com/justin/"
+  author_photo        = "http://www.google.com/ig/modules/ov/developer_justin.jpg"
+  author_aboutme      = "I work in San Francisco.  I write software.  I take photographs.  I enjoy running many miles at a time."
+  author_quote        = "'Great spirits have always encountered violent opposition from mediocre minds.' -- Albert Einstein"
+  screenshot          = "http://www.talisweb.com/justin/gmodules/wowbrow/wowbrow_screenshot.gif"
+  thumbnail           = "http://www.talisweb.com/justin/gmodules/wowbrow/wowbrow_thumbnail.gif"
+  render_inline       = "required"
+  scaling             = "true"
+  scrolling           = "true">
+    <Locale lang="en" country="us" />
+</ModulePrefs>
+
+<UserPref name="fontsize"  display_name="Text Size" default_value="Normal" datatype="enum">
+  <EnumValue value="60%"   display_value="Smaller" />
+  <EnumValue value="72.5%" display_value="Normal"  />
+  <EnumValue value="85%"   display_value="Larger"  />
+</UserPref>
+<UserPref name="favs" default_value="" datatype="hidden" />
+
+<Content type="html">
+<![CDATA[
+
+<script src="http://www.talisweb.com/justin/gmodules/localweather/preMadeSaxEventHandler.js" type="text/javascript"></script>
+<script src="http://www.talisweb.com/justin/gmodules/localweather/xmldom.js" type="text/javascript"></script>
+<script src="http://www.talisweb.com/justin/gmodules/localweather/xmlsax.js" type="text/javascript"></script>
+<script src="http://www.talisweb.com/justin/gmodules/localweather/xmlw3cdom.js" type="text/javascript"></script>
+<script src="http://www.talisweb.com/justin/gmodules/localweather/formatDate.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+//var is_gecko = ig_d.B;
+//var is_opera = ig_d.C;
+//var is_ie    = !ig_d.B && !ig_d.C;
+
+var is_gecko = true;
+var is_opera = false;
+var is_ie    = false;
+
+
+// base URL for images
+var base_url  = "http://www.talisweb.com/justin/gmodules/wowbrow/";
+// base URL for links blizzar'd forums for the realms
+var wow_url   = "http://forums.worldofwarcraft.com/board.aspx?fn=wow-realm-";
+
+var dexter__MODULE_ID__;
+
+var prefs__MODULE_ID__;
+
+/*
+ * Onload
+ */
+
+
+
+_IG_RegisterOnloadHandler(init__MODULE_ID__);
+function init__MODULE_ID__() {
+  prefs__MODULE_ID__  = new _IG_Prefs(__MODULE_ID__);
+  dexter__MODULE_ID__ = new Brain("gui__MODULE_ID__", "header__MODULE_ID__", "data__MODULE_ID__");
+  dexter__MODULE_ID__.loadUSA("http://www.worldofwarcraft.com/realmstatus/status.xml");
+  setTimeout("menuInit();", 3000);
+
+
+  // hide menu
+  _IG_AddEventHandler("click", function() {
+    if(!arguments[0] || !arguments[0].target)
+      return false;
+
+    if(!isAncestor__MODULE_ID__(arguments[0].target, "realms__MODULE_ID__"))
+      menuToggle__MODULE_ID__(0);
+  });
+}
+
+function isAncestor__MODULE_ID__(child, ancestor) {
+  if(typeof child == "string")
+    child = _gel(child);
+  if(typeof ancestor == "string")
+    ancestor = _gel(ancestor);
+
+  if(!child || !ancestor)
+    return false;
+
+  while(child.parentNode) {
+    child = child.parentNode;
+    if(child.id == ancestor.id)
+      return true;
+  }
+  return false;
+}
+
+
+function menuInit() {
+  var menu, list, opt, link;
+
+  menu = document.createElement("div");
+  menu.id  = "menu__MODULE_ID__";
+
+  list            = document.createElement("ul");
+  opt             = document.createElement("li");
+  opt.id          = "mitem_usa__MODULE_ID__";
+  link            = document.createElement("a");
+  link.href       = "javascript:void(0);";
+  link.onclick    = function() {realms__MODULE_ID__('usa'); menuToggle__MODULE_ID__(0); return false;}
+  link.innerHTML  = "USA";
+  opt.appendChild(link);
+  list.appendChild(opt);
+
+  opt             = document.createElement("li");
+  opt.id          = "mitem_favs__MODULE_ID__";
+  link            = document.createElement("a");
+  link.href       = "javascript:void(0);";
+  link.onclick    = function() {realms__MODULE_ID__('mine'); menuToggle__MODULE_ID__(0); return false;}
+  link.innerHTML  = "Favorites";
+  opt.appendChild(link);
+  list.appendChild(opt);
+
+  menu.appendChild(list);
+  _gelstn("body")[0].appendChild(menu);
+
+  menuMove__MODULE_ID__();
+}
+
+function menuMove__MODULE_ID__() {
+  var menu = _gel("menu__MODULE_ID__");
+  var x    = getPagePos__MODULE_ID__(_gel("gui__MODULE_ID__"), 1);
+  var y    = getPagePos__MODULE_ID__(_gel("gui__MODULE_ID__"), 0) +
+             _gel("gui__MODULE_ID__").scrollHeight;
+  menu.style.left = x + "px";
+  menu.style.top  = y + "px";
+}
+
+function menuToggle__MODULE_ID__() {
+  var menu = _gel("menu__MODULE_ID__");
+  if(!menu)
+    return false;
+
+  var item = _gel("realms__MODULE_ID__");
+
+  if(typeof arguments[0] != "undefined") {
+    var flag = arguments[0]
+    if(flag)
+      menu.style.display = "block";
+    else
+      menu.style.display = "none";
+  }
+  else {
+    if(menu.style.display == "none" || !menu.style.display)
+      menu.style.display = "block";
+    else
+      menu.style.display = "none";
+  }
+
+  if(item && menu.style.display == "none") {
+    item.style.background = "";
+    //console.log("off");
+  }
+  else if(item && menu.style.display == "block") {
+    item.style.background = "#FFFFCC";
+    //console.log("on");
+  }
+}
+
+function menuVisible__MODULE_ID__() {
+  var menu = _gel("menu__MODULE_ID__");
+  if(!menu)
+    return false;
+  if(!menu.style.display)
+    return false;
+  if(menu.style.display == "none")
+    return false;
+
+  return true;
+}
+
+/* Controls the GUI */
+function Brain(gui, header, data) {
+  // ui controls go here
+  this.boxGui  = _gel(gui)
+  // column headers go here
+  this.boxHead = _gel(header);
+  // data goes here
+  this.boxData = _gel(data);
+
+  // the list of realm lists
+  this.lists   = [];
+
+  // user's favorite realms
+  this.favs = new RealmList();
+  this.lists.push(this.favs);
+
+  // currently visible realm list
+  this.current = 0;
+
+  // current page
+  this.page    = "";
+
+
+  // cleanup variables on page unload
+  _IG_AddEventHandler("unload", function() {
+    this.boxGui  = undefined;
+    this.boxHead = undefined;
+    this.boxData = undefined;
+    this.lists   = undefined;
+  });
+}
+
+/* Add a list */
+Brain.prototype.addList = function(list) {
+  if(typeof list != "object")
+    return;
+  this.lists.push(list);
+  return true;
+}
+
+/* Delete a list */
+Brain.prototype.delList = function(idx) {
+  if(idx >= 0 && idx < this.lists.length) {
+    this.lists.splice(idx, 1);
+  }
+}
+
+/* Get number of lists */
+Brain.prototype.numLists = function() {
+  if(this.lists)
+    return this.lists.length;
+  return 0;
+}
+
+/* Set the currently visible list */
+Brain.prototype.setCurrent = function(idx) {
+  if(idx >= 0 && idx < this.lists.length) {
+    this.current = idx;
+    return true;
+  }
+  return false;
+}
+
+/* Get the currently visible list */
+Brain.prototype.getCurrent = function() {
+  return this.current;
+}
+
+Brain.prototype.clearView = function() {
+  this.boxGui.innerHTML   = "";
+  if(this.boxHead)
+    this.boxHead.innderHTML = "";
+  this.boxData.innerHTML  = "";
+}
+
+Brain.prototype.sort = function(key, order) {
+  if(this.lists[this.getCurrent()].sortKey) {
+    var oldKey = this.lists[this.getCurrent()].sortKey;
+    var cells  = getElementsByClassName(_gel("table30"), "data_"+oldKey);
+    for(var i=0; i<cells.length; i++) {
+      cells[i].style.background = "";
+    }
+  }
+
+  this.lists[this.getCurrent()].sort(key, order);
+  this.render();
+
+  var cells = getElementsByClassName(_gel("table30"), "data_"+key);
+  for(var i=0; i<cells.length; i++) {
+    cells[i].style.background = "#FFFFFF";
+  }
+}
+
+/* Get and set user preferences */
+//Brain.prototype.doPrefs = function() {}
+
+/* Redraw the screen */
+Brain.prototype.render = function() {
+  // if no current panel is visible set it to the first in the list
+  if(this.getCurrent() == 0 && this.numLists() > 0)
+    this.setCurrent(1);
+
+  this.clearView();
+  this.renderGUI();
+  this.renderData();
+  check_favs__MODULE_ID__();
+}
+
+Brain.prototype.renderData = function() {
+  this.lists[this.getCurrent()].render(this.boxData);
+}
+
+Brain.prototype.renderHead = function() {
+  var html = ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    ""+
+    "";
+}
+
+
+Brain.prototype.renderGUI = function() {
+  var str = "<div id='realms__MODULE_ID__' border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\">";
+  str += "<a href='javascript:void(0);' onclick='menuToggle__MODULE_ID__();'><img src=\""+base_url+"wow_realms.gif\" height=\"16\" width=\"53\" src=\"Realms\" /></a>";
+
+  // realm list
+  //for(var i=0; i<this.lists.length; i++) {
+  //  str += "<a href=\"javascript:void(0);\" onclick=\"realms__MODULE_ID__('usa'); return false;\">USA</a> - ";
+  //}
+
+  // favorite realms
+  //str += "<a href=\"javascript:void(0);\" onclick=\"realms__MODULE_ID__('mine'); return false;\">Favorites</a>";
+  str += "</div>";
+
+  // edit/save favorite realms
+  str += ""+
+    "<div id='buttons__MODULE_ID__'>"+
+    "<a href=\"javascript:void(0);\" onclick=\"toggle_favs__MODULE_ID__(); return false;\"><img id=\"icon_favs__MODULE_ID__\" src=\""+base_url+"book_open.gif\" height=\"16\" width=\"16\" title=\"Edit Favorite Realms\"/></a>";
+
+  // show/hide help
+  str += ""+
+    "<a href=\"javascript:void(0);\" onclick=\"dexter__MODULE_ID__.toggleHelp(); return false;\"><img id=\"icon_help__MODULE_ID__\" src=\""+base_url+"help.gif\" height=\"16\" width=\"16\" title=\"About Wow Realm Status\"/></a>"+
+    "</div><div class='hack'></div>";
+
+  str += ""+
+    "<div id='edit__MODULE_ID__'><a href='javascript:void(0);' onclick='uncheck_favs__MODULE_ID__();'>Clear</a> all favorites</div>";
+
+  this.boxGui.innerHTML = str;
+}
+
+/* Loads data off of the network into RealmLists */
+Brain.prototype.loadUSA = function(url) {
+  var realms;
+  var aCopy = this;
+
+  _IG_FetchContent(url, function() {
+    // the XML payload
+    var responseText = arguments[0];
+    if(!responseText) {
+      var str = "The World of Warcraft webserver could not be contacted to get realm status.";
+      return;
+    }
+
+    // realm list that will be added as a panel
+    realms = new RealmList();
+
+    // setup the XML for script parse
+    var parser  = new DOMImplementation();
+    var xmlDoc  = parser.loadXML(responseText.replace(/\&\#039\;/g, "'"));
+    if(!xmlDoc) {
+      return;
+    }
+    var docRoot = xmlDoc.getDocumentElement();
+
+    // the collection of realms
+    var realmsRSS = docRoot.getElementsByTagName("r");
+    for(var i=0; i<realmsRSS.length; i++) {
+      // get name, gameplay type, status and population for each
+      var c_realm = realmsRSS.item(i);
+      realms.addRealm(new Realm({"name":c_realm.getAttribute("n"),"type":c_realm.getAttribute("t"),"population":c_realm.getAttribute("l"),"status":c_realm.getAttribute("s")}));
+    }
+    aCopy.addList(realms);
+    aCopy.render();
+  });
+}
+
+Brain.prototype.loadEuro = function(url) {
+
+}
+
+/*
+ * Toggle the about div on and off
+ */
+Brain.prototype.toggleHelp = function() {
+  var about   = _gel("about__MODULE_ID__");
+  var content = _gel("data__MODULE_ID__");
+
+  //console.log("page %s", this.page);
+
+  if(!this.page || this.page == "data") {
+    content.innerHTML = about.innerHTML;
+    this.page = "about";
+  }
+  else {
+    this.render();
+    this.page = "data";
+  }
+
+}
+
+/**
+ * Map a gameplay code to a description
+ */
+function getGameDesc(code) {
+  var map = {1:"Normal",
+             2:"Player versus Player (PvP)",
+             3:"Roleplaying (RP)",
+             4:"Roleplaying Player versus Player"};
+  return map[code] || "";
+}
+
+/**
+ * Map a gameplay code to a name
+ */
+function getGame(code) {
+  var map = {1:"<span style=\"color:#234303;\">Normal</span>",
+             2:"<span style=\"color:#660D02;\">(PVP)</span>",
+             3:"<span style=\"color:#535600;\">(RP)</span>",
+             4:"<span style=\"color:#535600;\">(RPPVP)</span>"};
+  return map[code] || "";
+}
+
+/**
+ * Map a population code to a description (i.e. how full the realm is)
+ */
+function getPopulation(code) {
+  var map = {0:"",
+             1:"<span style=\"color:#234303;\">Low</span>",
+             2:"<span style=\"color:#535600;\">Medium</span>",
+             3:"<span style=\"color:#660D02;\">High</span>",
+             4:"<span style=\"color:#660D02;\">Max</span>"};
+  return map[code] || "";
+}
+
+/**
+ * Map a realm status code to a description (i.e. how full the realm is)
+ */
+function getStatus(code) {
+  var map = {1:"up",
+             2:"down :("};
+  return map[code] || "";
+}
+
+function stripTags(str) {
+  var backrefs = /\<.*\>(.*)\<.*\>/.exec(str);
+  if(backrefs) {
+    return backrefs[1];
+  }
+}
+
+function RealmList() {
+  this.realms    = [];
+  this.name      = "";
+  this.sortKey   = "name";
+  this.sortOrder = 0;
+}
+/* Add a realm */
+RealmList.prototype.addRealm = function(realm) {
+  this.realms.push(realm);
+  return true;
+}
+/* Delete a realm */
+RealmList.prototype.delRealm = function(realm) {
+
+}
+
+
+/* Get HTML for this list */
+RealmList.prototype.render = function(container) {
+  // table header
+  var c_class = "common bold";
+  var str = ""+
+    "<table id='table__MODULE_ID__' border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"100%\"><tbody>"+
+    "<tr id='header__MODULE_ID__'>"+
+    "<td></td>";
+
+  var columns = ["name", "type", "pop"];
+  var c_img;
+  for(var i=0; i<columns.length; i++) {
+    if(this.sortKey == columns[i] && this.sortOrder == 1)
+      c_img = " <img src='"+base_url+"wow_sort1.gif' width='9' height='9' />";
+    else if(this.sortKey == columns[i] && this.sortOrder == 0)
+      c_img = " <img src='"+base_url+"wow_sort2.gif' width='9' height='9' />";
+    else
+      c_img = "";
+
+    str += "<td class=\""+c_class+"\" id='sort_"+columns[i]+"__MODULE_ID__'><a href='javascript:void(0);' onclick='dexter__MODULE_ID__.sort(\""+columns[i]+"\", \"auto\"); return false;'>"+toProperCase__MODULE_ID__(columns[i])+"" +c_img+ "</a></td>";
+  }
+  str += "</tr>";
+
+
+  // each realm gets 1 row
+  for(var i=0; i<this.realms.length; i++) {
+    var c_realm = this.realms[i];
+    // icon indicating realm is up or down
+    var c_icon = c_realm.icon;
+    // gametype
+    var c_gtype = c_realm.game_type || "&nbsp" ;
+
+    // construct the class string that will style the table cells
+    var c_class = "common ";
+    // first alternate the background color every other row
+    c_class += i%2 == 0 ? "even " : "odd ";
+
+    var c_link = "<a href=\"" + wow_url + c_realm.name.replace(/\'/g, "").toLowerCase() + "\" target=\"_blank\">";
+
+    str += "<tr class=\"realm_row\" id=\"row_"+c_realm.name+"__MODULE_ID__\">"+
+           "<td class=\""+c_class+" rightpad data_icon\">" + c_icon +"</td>"+
+           "<td class=\""+c_class+" rightpad data_name\">"+c_link + c_realm.name +"</a></td>"+
+           "<td class=\""+c_class+" rightpad data_type\" title=\""+c_realm.game_desc+"\">"+ c_gtype +"</td>"+
+           "<td class=\""+c_class+" data_pop\">" + c_realm.pop_desc  +"</td>"+
+           "</tr>";
+  }
+  str += "</tbody></table>";
+
+  container.innerHTML += str;
+}
+/* Get preferences from the user */
+RealmList.prototype.getInput = function() {
+
+}
+/* Save preferences the user has selected */
+RealmList.prototype.saveInput = function() {
+
+}
+
+/* Sort the list */
+RealmList.prototype.sort = function() {
+  var sort  = arguments[0];
+  var order = arguments[1];
+  if(order == "auto" && this.sortOrder)
+    order = 0;
+  else if(order == "auto")
+    order = 1;
+
+  this.sortKey   = sort;
+  this.sortOrder = order;
+
+  this.realms.sort(function(a, b) {
+    var lhs1, lhs2, rhs1, rhs2;
+
+    // get sort values
+    if(sort == "name") {
+      lhs1 = a["name"];
+      rhs1 = b["name"];
+      lhs2 = a["game_type"];
+      rhs2 = b["game_type"];
+    }
+    else if(sort == "type") {
+      lhs1 = a["game_desc"];
+      rhs1 = b["game_desc"];
+      lhs2 = a["name"];
+      rhs2 = b["name"];
+    }
+    else if(sort == "pop") {
+      lhs1 = a["pop_code"];
+      rhs1 = b["pop_code"];
+      lhs2 = a["name"];
+      rhs2 = b["name"];
+    }
+
+    // swap direction
+    if(order) {
+      var temp = lhs1;
+      lhs1 = rhs1;
+      rhs1 = temp;
+      temp = lhs2;
+      lhs2 = rhs2;
+      rhs2 = temp;
+    }
+
+    if(lhs1 > rhs1) {
+      return 1;
+    }
+    else if(lhs1 < rhs1) {
+      return -1;
+    }
+    else {
+      if(lhs2 > rhs2)
+        return 1;
+      else if(lhs2 < rhs2)
+        return -1;
+      else
+        return 0;
+    }
+
+  });
+}
+
+/* A Word of Warcraft Realm */
+function Realm(params) {
+  this.id          = params.id || "";
+  this.name        = params.name || "";
+  this.game_code   = params.type || "";
+  this.game_type   = getGame(this.game_code) || this.game_code;
+  this.game_desc   = getGameDesc(this.game_code) || this.game_code;
+  this.pop_code    = params.population || "";
+  this.pop_desc    = getPopulation(this.pop_code) || this.pop_code;
+  this.status_code = params.status || "";
+  this.status_desc = getStatus(this.status_code) || "";
+  this.icon        = "<img class=\"status_img\" src=\""+base_url+this.status_code+".gif"+"\" height=\"16\" width=\"16\" alt=\""+this.status_desc+"\" title=\""+this.name+" is "+this.status_desc+"\" /><input class=\"fav_check "+this.status_desc+"\" id=\"fav_"+this.name+"__MODULE_ID__\" type=\"checkbox\" />"
+}
+
+
+function realms__MODULE_ID__(flag) {
+  if(flag == "mine") {
+    if(favs_on())
+      toggle_favs__MODULE_ID__("off");
+    var favs = prefs__MODULE_ID__.getString("favs").split("|");
+    var realms = getElementsByClassName(document, "realm_row");
+    for(var i=0; i<realms.length; i++) {
+      var regex = new RegExp(realms[i].id.substring(4));
+      if(regex.test(favs)) {
+        if(is_ie)
+          realms[i].style.display = "block";
+        else
+          realms[i].style.display = "table-row";
+      }
+      else
+        realms[i].style.display = "none";
+    }
+  }
+  else if(flag == "usa") {
+    var realms = getElementsByClassName(document, "realm_row");
+    for(var i=0; i<realms.length; i++) {
+      if(is_ie)
+        realms[i].style.display = "block";
+      else
+        realms[i].style.display = "table-row";
+    }
+  }
+
+  return false;
+}
+
+/*
+ * Toggle checkboxes so the user can pick his favorite realms
+ */
+function toggle_favs__MODULE_ID__() {
+  var display1, display2, action, favs;
+  var inputs = getElementsByClassName(document, "fav_check");
+
+  // if we're told, enter normal mode
+  // if we're told, enter edit mode
+  // by default enter edit mode
+  // finally fall back to set mode
+  if(arguments[0] && arguments[0]=="off")
+    action = "off";
+  else if(arguments[0] && arguments[0]=="on")
+    action = "on";
+  else if(!inputs[0].style.display || inputs[0].style.display == "none")
+    action = "on";
+  else
+    action = "off";
+
+  // show inputs, hide icons, let the user set his favorites
+  if(action == "on") {
+    realms__MODULE_ID__("usa");
+    show_collection__MODULE_ID__(getElementsByClassName(document, "fav_check"));
+    hide_collection__MODULE_ID__(getElementsByClassName(document, "status_img"));
+    _gel("edit__MODULE_ID__").style.display = "block";
+  }
+  // hide inputs, show icons, save the user's favorites
+  else if(action == "off") {
+    show_collection__MODULE_ID__(getElementsByClassName(document, "status_img"));
+    hide_collection__MODULE_ID__(getElementsByClassName(document, "fav_check"));
+    _gel("edit__MODULE_ID__").style.display = "none";
+    user_favs = user_favs__MODULE_ID__(inputs);
+    prefs_set("favs", user_favs);
+  }
+}
+
+/**
+ * Return true if the user is editing his favorite realms
+ */
+function favs_on() {
+  var inputs = getElementsByClassName(document, "fav_check");
+  return inputs[0] && inputs[0].style.display != "none";
+}
+
+/**
+ * Read which realms the user checked as his favorite and return a pipe delimited string
+ */
+function user_favs__MODULE_ID__(inputs) {
+  var favs = "";
+
+  for(var i=0; i<inputs.length; i++) {
+    if(inputs[i].checked) {
+      favs += inputs[i].id + "|";
+    }
+  }
+
+  if(favs.length > 1)
+    favs = favs.substring(0, favs.length-1);
+
+  return favs;
+}
+
+/**
+ * Uncheck all checkboxes and delete the preference
+ */
+function uncheck_favs__MODULE_ID__() {
+  var inputs = getElementsByClassName(document, "fav_check");
+  for(var i=0; i<inputs.length; i++)
+    inputs[i].checked = false;
+
+  prefs__MODULE_ID__.set("favs", "");
+}
+
+
+/**
+ * Get favorite realms from the GHP API and check the corresponding inputs on the page
+ */
+function check_favs__MODULE_ID__() {
+  var favs = prefs__MODULE_ID__.getString("favs")
+  if(favs) {
+    favs = favs.split("|");
+    for(var i=0; i<favs.length; i++) {
+      _gel(favs[i]).checked = true;
+    }
+  }
+}
+
+
+/**
+ * Show a collection of Nodes
+ */
+function hide_collection__MODULE_ID__(images) {
+  if(!images)
+    return;
+  for(var i=0; i<images.length; i++)
+    images[i].style.display = "none";
+}
+/**
+ * Hide a collection of Nodes
+ */
+function show_collection__MODULE_ID__(images) {
+  if(!images)
+    return;
+  for(var i=0; i<images.length; i++)
+    images[i].style.display = "block";
+}
+
+/**
+ * Set a user preference using the GHP API
+ */
+function prefs_set(key, val) {
+  if(prefs__MODULE_ID__.getString(key) != val) {
+    //console.log("saving %s -> %s", key, val);
+    prefs__MODULE_ID__.set(key, val);
+  }
+}
+
+
+function my_dump__MODULE_ID__(obj) {
+  var str = "";
+  for(o in obj)
+    str += o + " => " + obj[o] + "\n";
+  return str;
+}
+
+// http://www.snook.ca/archives/000370.php
+function getElementsByClassName(node, classname) {
+  var a = [];
+  var re = new RegExp('\\b' + classname + '\\b');
+  var els = node.getElementsByTagName("*");
+  for(var i=0,j=els.length; i<j; i++)
+    if(re.test(els[i].className))a.push(els[i]);
+  return a;
+}
+
+/**
+ * proper case function (JScript 5.5+)
+ * http://www.codeproject.com/jscript/propercase.asp
+ */
+function toProperCase__MODULE_ID__(s) {
+  return s.toLowerCase().replace(/^(.)|\s(.)/g, function($1) { return $1.toUpperCase(); });
+}
+
+
+function getPagePos__MODULE_ID__(el, left) {
+  var val=0;
+  while(el != null) {
+    val += el["offset"+(left?"Left":"Top")];
+    el = el.offsetParent;
+  }
+  return val;
+}
+
+function gScroll__MODULE_ID__(target) {
+  if(!_gel("data__MODULE_ID__"))
+    return false;
+
+  // Everyone except IE lines things up better when setting to offsetTop minus this amount.
+  // I suspect its IE running in quirks mode and not rendering with the W3C box model.
+  var fuzz = 20;
+
+  if(typeof target == "number") {
+    _gel("data__MODULE_ID__").scrollTop = target;
+  }
+  else if(typeof target == "string") {
+    if(!_gel(target))
+      return false;
+    _gel("data__MODULE_ID__").scrollTop = _gel(target).offsetTop - fuzz;
+  }
+}
+
+</script>
+
+
+
+<style type="text/css">
+
+.common {
+  font-family: Helvetica, Arial, sans-serif;
+}
+.rightpad {
+  padding-right: 5px;
+}
+.smaller {
+  font-size: .70em;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.normal {
+  font-size: .85em;
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+.larger {
+  font-size: 1em;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.even {
+  border-bottom: 1px dotted #DADADA;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.odd {
+  border-bottom: 1px dotted #DADADA;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.bold {
+  font-weight: bold;
+}
+.fav_check {
+  display: none;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+.hack {
+  clear: both;
+}
+
+.myh3 {
+  font-size: inherit;
+  font-weight: bold;
+  border-bottom: 2px solid #e5ecf9;
+  padding: 2px;
+  margin-bottom: 3px;
+}
+
+.toplink {
+  text-align: right;
+  margin-bottom: 13px;
+}
+.toplink img {
+  align: middle;
+}
+.toplink a, .toplink a:active, .toplink a:visited {
+  font-variant: small-caps;
+  color: black;
+  text-decoration: none;
+}
+
+
+ul.normlist {
+  list-style-type: circle;
+  padding-left: 15px;
+  margin-left: 15px;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+ul.normlist li {
+  font-size: inherit;
+}
+ul.normlist li img {
+  margin-right: 3px;
+}
+
+ul.barelist {
+  list-style-type: none;
+  padding-left: 0;
+  margin-left: 0;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+ul.barelist li {
+  font-size: inherit;
+}
+ul.barelist li img {
+  margin-right: 3px;
+}
+
+
+#data__MODULE_ID__ {
+  height: 200;
+  overflow: auto;
+}
+#data__MODULE_ID__ a {
+  text-decoration: none;
+}
+
+#gui__MODULE_ID__ {
+  background: #E5ECF9;
+  padding: 0;
+  border-top: 0px solid #A0A0A0;
+  border-bottom: 1px solid #A0A0A0;
+}
+
+#header__MODULE_ID__ {
+  background: #F0F0F0;
+}
+#header__MODULE_ID__ td {
+  padding-top: 3px;
+  padding-right: 0;
+  padding-bottom: 3px;
+  padding-left: 0;
+}
+#header__MODULE_ID__ td a {
+  display: block;
+}
+#header__MODULE_ID__ a,
+#header__MODULE_ID__ a:visited,
+#header__MODULE_ID__ a:active  {
+  color: black;
+}
+
+#data__MODULE_ID__ img,
+#gui__MODULE_ID__ img,
+#header__MODULE_ID__ img {
+  border: 0;
+}
+
+
+
+#about_toggle__MODULE_ID__ {
+  width: 18px;
+}
+#prefs_toggle__MODULE_ID__ {
+  width: 18px;
+}
+
+#icon_favs__MODULE_ID__ {
+  background: transparent;
+}
+#icon_favs__MODULE_ID__:hover {
+  background: #FFFFCC;
+}
+#icon_help__MODULE_ID__ {
+  background: transparent;
+}
+#icon_help__MODULE_ID__:hover {
+  background: #FFFFCC;
+}
+
+
+#buttons__MODULE_ID__ {
+  text-align: right;
+  float: right;
+  width: 50px;
+}
+
+#buttons__MODULE_ID__ a img {
+  padding: 2px;
+}
+
+#realms__MODULE_ID__ {
+  float: left;
+}
+#realms__MODULE_ID__:hover {
+  background: #FFFFCC;
+}
+#realms__MODULE_ID__ a {
+  text-decoration: none;
+  display: block;
+}
+#realms__MODULE_ID__ a img {
+  padding: 2px;
+}
+
+
+#edit__MODULE_ID__ {
+  display: none;
+  border-top: 1px solid #A0A0A0;
+  padding-top: 3px;
+  padding-right: 0;
+  padding-bottom: 3px;
+  padding-left: 3px;
+}
+
+#table__MODULE_ID__ {
+  margin-right: 2px;
+}
+
+#menu__MODULE_ID__ {
+  display: none;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100px;
+  z-index: 100;
+  border: 2px outset #FFFFA0;
+  background: white;
+  font-size: __UP_fontsize__;
+}
+#menu__MODULE_ID__ ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+#menu__MODULE_ID__ li {
+  border-bottom: 1px solid #D0D0D0;
+}
+#menu__MODULE_ID__ .last {
+  border-bottom: 0;
+}
+#menu__MODULE_ID__ li a {
+  display: block;
+  text-decoration: none;
+
+  padding-top: 2px;
+  padding-right: 5px;
+  padding-bottom: 2px;
+  padding-left: 5px;
+
+  color: black;
+  background: transparent;
+}
+
+#menu__MODULE_ID__ li a:hover {
+  background: #E5ECF9;
+}
+
+#remote___MODULE_ID__ {
+  font-size: __UP_fontsize__;
+}
+#remote___MODULE_ID__ * {
+  font-size: inherit;
+}
+</style>
+
+<div id="gui__MODULE_ID__"></div>
+
+<div id="data__MODULE_ID__">
+  <p class="common normal">Loading WoW Realm Status
+  <img src="http://www.talisweb.com/justin/gmodules/wowbrow/loading.gif" height="16" width="16" alt="..." /></p>
+</div>
+
+<div id="about__MODULE_ID__" style="display:none;">
+  <div class="myh3" id="h_overview__MODULE_ID__" style="margin-top:0;">Overview</div>
+  <p class="tail">All information is gathered from Blizzard's own <a href="http://www.worldofwarcraft.com/realmstatus/">Realm Status</a> page.</p>
+
+  <div class="myh3" id="h_toc__MODULE_ID__" style="margin-top:0;">Table of Contents</div>
+  <ul class="normlist">
+    <li><a title="Go back to the table of contents" href="javascript:void(0);" onclick="gScroll__MODULE_ID__('h_overview__MODULE_ID__'); return false;">Overview</a></li>
+    <li><a title="Go back to the table of contents" href="javascript:void(0);" onclick="gScroll__MODULE_ID__('h_credits__MODULE_ID__'); return false;">Credits</a></li>
+  </ul>
+
+
+  <div class="myh3" id="h_credits__MODULE_ID__">Credits</div>
+  <ul class="normlist">
+    <li><a href="">Blizzard</a></li>
+  </ul>
+  <div class="toplink">
+    <a title="Go back to the table of contents" href="javascript:void(0);" onclick="gScroll__MODULE_ID__('h_toc__MODULE_ID__'); return false;">
+      top <img src="http://boolean.googlepages.com/511_arrow_up.gif" width="16" height="16" align="top" />
+    </a>
+  </div>
+
+</div>
+
+
+]]>
+</Content>
+</Module>
+
